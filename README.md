@@ -48,8 +48,42 @@ CI에서는 이 `exit 1`이 머지를 막는다(GitHub branch protection의 Requ
 
 ## MCP 서버 — Claude/Cursor에서 "두 실행 비교해줘"
 
-같은 게이트를 **MCP 도구**로 노출한다. Claude Desktop/Cursor 같은 클라이언트가
-`run_gate`를 호출해 **판정 + 실패모드 진단 + 룰 기반 제안**을 받는다.
+같은 게이트를 **MCP 도구**로 노출한다 — **두 도구**(`run_gate` + `analyze_failures`)로.
+Claude Desktop/Cursor 같은 클라이언트가 이를 호출해 **회귀 판정·실패모드 진단·개선 힌트**를 받는다.
+
+### 두 도구의 역할 — "무엇이 회귀했나" + "지금 뭐가 안 되나"
+
+운영자는 두 가지를 묻는다. 이 서버는 그 둘을 각각 다른 도구로 답한다.
+
+| | `run_gate` | `analyze_failures` |
+|---|---|---|
+| 답하는 질문 | **"무엇이 회귀했나?"** (변경 후 깨진 것) | **"지금 뭐가 안 되고, 뭘 먼저 고칠까?"** (현재 약점) |
+| 입력 | 두 실행(baseline ↔ candidate) | 한 실행(`run_dir`) |
+| 하는 일 | 통계적 회귀 판정 + 원인 config 역추적 | 병목 단계·약한 슬라이스 진단 + 개선 힌트 |
+| 산출 | PASS/WARN/FAIL + 유의하게 회귀한 실패모드 | 실패 분포·병목 단계·슬라이스별 약점·RAGAS 환산·개선 우선순위 |
+| 공통 | 둘 다 **운영자가 "다음에 뭘 할지"** 를 알게 한다 — 한쪽은 **회귀 진단**, 한쪽은 **개선 진단**. |
+
+**`analyze_failures`의 핵심 가치 한 줄**: 점수만 보는 게 아니라 **어느 슬라이스가 어느 단계
+(검색/생성/그라운딩/거부)에서 막히는지**를 짚어, 운영자가 **무엇부터 손볼지 방향**을 잡게 한다.
+— 즉 개선을 대신 해주는 게 아니라 **개선 힌트**를 준다.
+
+**운영 사이클 — 두 도구가 맞물리는 순환**:
+
+```
+ analyze_failures   →   운영자가 개선 적용   →   run_gate            →  (개선 성공 시)
+ (약점·병목 진단,        (검색/청킹/프롬프트…       (그 변경이 회귀 없이      → 그게 새 baseline
+  개선 힌트)              운영자가 직접 수정)         개선됐는지 검증)            으로 채택
+        ↑                                                                    │
+        └────────────  운영 중 회귀 발생 시 재진단  ←───────────────────────────┘
+            run_gate("무엇이 깨졌나") + analyze_failures("어디가 문제인가") → 반복
+```
+
+진단(`analyze_failures`)으로 방향을 잡고 → 운영자가 고치고 → 검증(`run_gate`)으로 회귀 없는
+개선임을 확인하면 그게 **새 baseline**이 된다. 운영 중 회귀가 나면 다시 두 도구로 재진단 —
+이 순환을 반복한다.
+
+> **정직성**: 두 도구 모두 개선을 **대신 수행**하거나 **"개선됐다"고 보장**하지 않는다.
+> 약점을 짚어주는 **진단·힌트** 역할이고, 실제 개선은 **운영자**가, 그 효과 검증은 **`run_gate`**가 한다.
 
 ```bash
 pip install ".[mcp]"        # fastmcp는 옵션 extra (게이트 코어는 여전히 pydantic만)
@@ -86,6 +120,37 @@ run_gate("examples/baseline", "examples/demo_regression")
 > 결정적으로 만든다. **suggestion-only** — 게이트는 config를 자동 수정/실행하지 않으며, 모든 제안에
 > "사람이 적용 후 이 게이트로 재검증" 문구가 붙는다. MCP 계층은 통계 로직을 한 줄도 재구현하지 않고
 > 기존 엔진(`detect`→`gate`)을 **호출만** 한다 → CLI와 수치 동일.
+
+### `analyze_failures` — 단일 실행 진단 (run_gate의 짝)
+
+`run_gate`가 **두 실행을 비교**(회귀 감지)한다면, `analyze_failures`는 **한 실행을 진단**한다 —
+*"바꿨더니 나빠졌나?"* 가 아니라 *"지금 어디가 약하고, 뭘 먼저 손볼까?"* 에 답한다. 운영자의 두 번째
+니즈(성능을 올려야 할 때)를 위한 도구다. `run_dir` 하나만 받는다(비교 대상이 없으니 통계 검정 없음).
+
+```
+analyze_failures("examples/baseline")
+ → failure_distribution: {retrieval_miss: 65, correct: 34, hallucination: 1}
+   bottleneck: retrieval ("retrieval_miss가 65건으로 가장 큰 병목")
+   groundedness: grounded 17 / unsupported 2 (맞았지만 근거 미실재 = 리스크)
+   ragas_equivalent: context_recall 0.19, faithfulness 0.89, answer_correctness 0.20
+   improvement_priorities: ① 검색(top_k↑·청크 축소) ② 표값 슬라이스 집중 … (적용 후 run_gate로 검증)
+```
+
+**RAGAS 환산 (judge 없이 결정적, 차별점)** — RAGAS의 친숙한 지표를 우리의 **결정적 측정으로 환산**한다.
+LLM judge 호출이 없어 **같은 입력엔 같은 값**(재현 가능):
+
+| RAGAS 개념 | 우리 결정적 측정 | 비고 |
+|---|---|---|
+| `context_recall` | `retrieval_success_strict` (gold 근거 ⊆ retrieved) | judge 없음 |
+| `faithfulness` | `grounded / (grounded + unsupported)` | judge 없음 |
+| `answer_correctness` | `answerable_accuracy` (grounded 기준) | judge 없음 |
+| ~~`context_precision`~~ | — | **의도적 생략**: precomputed attribution(gold-free)만으론 산출 불가 |
+| ~~`answer_relevancy`~~ | — | **의도적 생략**: judge 필요 → 결정성과 충돌 |
+
+> **gold-free·결정적**: `analyze_failures`는 precomputed `attribution.jsonl`(케이스별 boolean)만 집계한다 —
+> `eval_cases.jsonl`(gold)을 다시 읽지 않으므로 Phase 6의 gold 제거를 되돌리지 않는다. 새 통계/채점 로직 0.
+> **suggestion-only + 닫힌 루프**: 개선 우선순위는 "검토 후보"이며, `analyze_failures`(약점 파악) →
+> 개선 적용 → `run_gate`(개선 검증)로 닫는다.
 
 ---
 
@@ -126,10 +191,22 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 
 - **실패모드 진단**: "점수 하락"이 아니라 `retrieval_miss`/`hallucination`/`over_answer` 중 **무엇이 유의하게 회귀했는지** 귀인. retrieval_miss는 gold 근거 ↔ 검색 청크 매칭으로 **judge 없이 결정적** 판정.
 - **judge 신뢰성 검증**: 본문 채점 LLM(gpt-4o)을 gold로 검증 — 정답/오답 probe로 **judge_accuracy = 0.987**(혼동행렬 포함). 미묘 변형 probe까지 써서 거짓 고득점을 방지. → [`reports/judge_validation.json`](reports/judge_validation.json).
+- **채점 전략: judge는 선택적·검증 후 사용**: 숫자/표값은 단위 정규화(조·억) + **±0.1% 허용오차로 judge 없이 결정적**, 답없음은 거부 문구 매칭으로 결정적, retrieval_miss는 gold 근거 ⊆ 검색 청크로 결정적. **judge는 본문(서술형)에만** 쓰고 그조차 gold로 검증(0.933→0.987). 회귀 게이트는 *'같은 입력엔 같은 판정'* 이 생명이라 `temperature=0`+seed로 **노이즈밴드 std=0**을 달성했고, 비결정성의 표면적을 본문으로 좁혔다.
+- **RAGAS 대비**: RAGAS는 훌륭한 범용 RAG 평가 프레임워크다. 우리는 그걸 부정하는 게 아니라, *'CI 회귀 게이트'* 목적상 **결정성을 우선**했다 — *개념은 빌리되(groundedness 등) 측정은 가능한 한 결정적으로*. judge 한 번의 흔들림이 PASS/FAIL을 뒤집으면 게이트로 못 쓰기 때문. (설계 근거 전문: [`docs/JOURNEY.md` — 설계 결정](docs/JOURNEY.md))
 - **groundedness 분리**: 맞은 답도 **정답값이 검색 근거에 실재(grounded)** 하는지 확인. 암기/운으로 맞은 `unsupported_correct`는 헤드라인 정확도에서 분리(모델 암기력이 RAG 점수를 부풀리지 않게).
 - **no_answer 착시 방어**: answerable 정확도와 no_answer 정확도를 **항상 짝으로** 보고(전부 거부하는 시스템이 들통나도록).
 - **통계적 정직 + 거짓경보 0건**: 노이즈밴드 + 부트스트랩으로 "유의한 회귀만" FAIL. **같은 config 재실행은 항상 PASS**(거짓경보 0건)로 게이트 신뢰성 검증 — 데모용 임계 조작 없음.
 - **도메인 범용성 실증**: 두 도메인(DART 한국 금융 / 영어 위키 QA)에서 **같은 게이트 작동, 엔진 코드 0줄 변경**(`app/regression/*` git diff = 0). 단, 위키는 인터페이스 검증용 **미니 인스턴스**(20문항·쉬운 추출형)이고 **DART(100문항)가 메인 레퍼런스**다. → [`docs/portability.md` §5](docs/portability.md).
+
+## 정직한 경계 (적용 범위)
+
+과장하지 않기 위해 **못 하는 것**도 명시한다. 이 엔진은 **gold(평가셋)를 전제**로 한다 — 가진 gold에 따라 작동 범위가 갈린다:
+
+- **정답 + 근거 라벨**(DART) → accuracy · retrieval_miss · groundedness **전 기능**(gold 근거 ⊆ retrieved, 결정적).
+- **정답만**(근거 라벨 없음 — 더 흔함) → accuracy 작동, retrieval_miss는 *'정답 텍스트가 검색 청크에 있나'* 로 대체 가능(위키 `wiki_value_present`가 이 방식).
+- **정답조차 없음(reference-free)** → **범위 밖**. 정답 없이 옳고 그름을 판정하려면 judge 의존이 불가피해 우리의 *결정성* 원칙과 충돌한다.
+
+**왜 한계가 아니라 정의인가**: 회귀 감지는 본질적으로 **비교 기준**이 있어야 성립한다 — 고정 평가셋 없이 *'깨졌다'* 를 판단하는 건 원리적으로 불가능하다. 따라서 평가셋 전제는 '회귀 게이트'의 정의에 내재한 조건이다(promptfoo·RAGAS의 reference 기반 평가도 같은 전제). → 상세 [`docs/JOURNEY.md` — 설계 결정](docs/JOURNEY.md), [`docs/portability.md`](docs/portability.md).
 
 ---
 
