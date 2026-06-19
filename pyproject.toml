@@ -1,7 +1,7 @@
 [project]
-name = "rag-regression-guard"
+name = "rag-regression-gate-mcp"
 version = "0.1.0"
-description = "Detect and attribute RAG quality regressions in CI for Korean financial disclosure (DART) QA."
+description = "MCP gate that detects and attributes RAG quality regressions by failure mode (domain-general; DART Korean-financial + English-wiki reference instances)."
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0",
@@ -17,6 +17,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+]
+# MCP server is OPTIONAL: the gate core (app/regression/*) stays pydantic-only.
+# Install with `pip install ".[mcp]"`; fastmcp is imported only in app/mcp/server.py.
+mcp = [
+    "fastmcp>=2.14",
 ]
 
 [tool.pytest.ini_options]

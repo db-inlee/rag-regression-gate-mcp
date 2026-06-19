@@ -58,12 +58,19 @@ def retrieved_keys(run_record: dict) -> set[tuple]:
     return keys
 
 
-def is_retrieval_miss(case: dict, run_record: dict) -> bool:
-    golds = gold_keys(case)
-    if not golds:  # no_answer has no gold table -> retrieval_miss N/A
+def gold_retrieved(gold_refs, retrieved) -> bool:
+    """Shared ⊆ check (domain-agnostic): all gold evidence present in retrieved."""
+    return set(gold_refs) <= set(retrieved)
+
+
+def is_retrieval_miss(case: dict, run_record: dict, matcher=None) -> bool:
+    """Domain-agnostic miss check. matcher=None → DART (gold_keys/retrieved_keys);
+    a GoldMatcher (e.g. WikiGoldMatcher) overrides how gold/retrieved refs are formed."""
+    golds = gold_keys(case) if matcher is None else matcher.gold_refs(case)
+    if not golds:  # no gold evidence (no_answer) -> retrieval_miss N/A
         return False
-    have = retrieved_keys(run_record)
-    return not all(g in have for g in golds)  # any gold table missing -> miss
+    have = retrieved_keys(run_record) if matcher is None else matcher.retrieved_refs(run_record)
+    return not gold_retrieved(golds, have)  # any gold evidence missing -> miss
 
 
 def _numbers_in(text: str) -> set[float]:
@@ -151,8 +158,9 @@ def _judge_assist(case, run_record, config, client) -> str:
 
 
 def attribute(case: dict, correct: bool | None, scored: dict, run_record: dict,
-              config: RagConfig, client=None) -> dict:
-    """Assign primary_failure. `correct` is the final verdict (judge for body_text)."""
+              config: RagConfig, client=None, matcher=None) -> dict:
+    """Assign primary_failure. `correct` is the final verdict (judge for body_text).
+    matcher=None → DART gold matching; a GoldMatcher overrides it (engine unchanged)."""
     base = {"id": case["id"], "slice": case["slice"]}
     detail: dict = {}
 
@@ -164,11 +172,15 @@ def attribute(case: dict, correct: bool | None, scored: dict, run_record: dict,
         return {**base, "primary_failure": "hallucination",
                 "attribution_detail": {"over_answer": scored.get("score_detail", {}).get("over_answer", True)}}
 
-    if is_retrieval_miss(case, run_record):
-        return {**base, "primary_failure": "retrieval_miss",
-                "attribution_detail": {"gold_keys": gold_keys(case),
-                                       "retrieved_tables": sorted(
-                                           f"{f}:{t}" for kind, f, t in retrieved_keys(run_record) if kind == "table")[:10]}}
+    if is_retrieval_miss(case, run_record, matcher):
+        if matcher is None:  # DART detail (unchanged → byte-identical)
+            det = {"gold_keys": gold_keys(case),
+                   "retrieved_tables": sorted(
+                       f"{f}:{t}" for kind, f, t in retrieved_keys(run_record) if kind == "table")[:10]}
+        else:
+            det = {"gold_keys": [list(g) if isinstance(g, tuple) else g for g in matcher.gold_refs(case)],
+                   "retrieved": sorted(str(r) for r in matcher.retrieved_refs(run_record))[:10]}
+        return {**base, "primary_failure": "retrieval_miss", "attribution_detail": det}
 
     if case["answer_schema"] == "text":  # body_text retrieved but wrong -> no table to misread
         return {**base, "primary_failure": "hallucination",

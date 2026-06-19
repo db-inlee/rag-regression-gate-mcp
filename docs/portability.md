@@ -110,5 +110,54 @@ MCP에서는 **Value-Presence Hook**이 두 갈래를 가진다:
 
 ---
 
-> 주의: 현재 코드는 의도적으로 DART에 결합돼 있다(범위 관리). 위 인터페이스는 **추출 후보**이며,
-> 실제 분리(추상화 도입)는 별도 작업이다 — 이 문서는 그 분리의 설계도.
+> 주의: 위 §1~§4는 **설계 분석**(원래 코드는 DART에 결합돼 있었다)이다. 아래 §5는 그 설계를
+> 실제로 구현해 검증한 결과다.
+
+---
+
+## 5. 엔진 범용성 실증 (Realized)
+
+위 설계(인터페이스 4종 + 보조 hook 2종)를 실제로 구현해 **두 도메인을 같은 엔진으로 처리**했다.
+
+- **DART(한국 금융 사업보고서, 100문항)** — 메인 레퍼런스.
+- **영어 위키 QA(SQuAD 2.0, 20문항)** — 인터페이스 검증용 **미니 인스턴스**. 정직히 말해
+  규모가 작고(20문항) **쉬운 추출형(factoid)** 위주라, DART의 표값·숫자추론·서술형 같은
+  난도/다양성은 없다. "범용성이 꽂히는지"를 보이는 용도이지 DART를 대체하지 않는다.
+
+두 도메인은 같은 엔진(`app/regression/*`, `app/evaluator/metrics.py`)으로 PASS/WARN/FAIL을 낸다.
+**위키 도메인을 통째로 추가했지만 엔진은 한 줄도 안 바뀌었다** — git으로 증명:
+
+```
+$ git diff --numstat <DART-v1> HEAD -- app/regression/ app/evaluator/metrics.py scripts/measure_noise.py
+(empty)        # detect / gate / 결합규칙 / noise_band = 0 라인
+```
+
+도메인이 갈리는 지점은 **플러그인 구현뿐**이다(`app/interfaces.py`, `app/adapters/{dart,wiki}.py`):
+
+| 인터페이스 | DART | Wiki |
+|---|---|---|
+| GoldMatcher 근거 키 | `(table, file, table_id)` / `(page, …)` | `doc_id` |
+| ⊆ 집합 비교 (retrieval_miss) | **동일 골격**(`gold_retrieved`, judge 없음) | **동일 골격** |
+| 임베딩 (config 값) | bge-m3 | all-MiniLM-L6-v2 |
+| 채점·거부문구 | 한국어 | 영어 |
+| EvalSet / 슬라이스 | 표값·숫자·본문·답없음 | factoid·no_answer |
+
+즉 GoldMatcher만 `(table,file,id) ↔ doc_id`로 갈리고 **⊆ 집합 비교는 동일**하다. 엔진은
+`gate_fields`(케이스별 boolean)와 `noise_band`라는 동일 포맷만 받으면 도메인을 모른다.
+
+> 재현: `python scripts/run_wiki_gate_demo.py` (baseline 노이즈밴드 + top_k 5→1 candidate +
+> 게이트). 결과: 위키 `retrieval_miss` 0→3을 judge 없이 검출, 게이트 WARN(20문항 소표본에서
+> 부트스트랩 CI가 0에 닿아 보수적으로 FAIL이 아닌 WARN — DART와 동일한 결합규칙).
+
+### 5.1 MCP 제품화 (Realized)
+
+§1~§4에서 "MCP 인터페이스 후보"로 적은 것 중 **게이트 코어가 실제 MCP 도구로 구현됐다**
+(`app/mcp/server.py`, 의존성은 옵션 extra `[mcp]`):
+
+- `run_gate(baseline_dir, candidate_dir) -> GateResult` — 기존 엔진(`detect_paths`→`evaluate`→
+  `exit_code`)을 **호출만** 하는 얇은 래퍼. 통계 0줄 재구현, 출력 수치는 CLI와 동일.
+- 제안 엔진(`app/mcp/suggest.py`)은 **룰 기반·결정적**: 실패모드→단계→기법 + config diff 역추적
+  ([`remediation_catalog.md`](remediation_catalog.md)). LLM 미사용, suggestion-only(자동 적용 없음).
+
+아직 "사용자 제공 플러그인"으로 추출만 한 건 도메인 어댑터(ScoringPlugin/GoldMatcher/EvalSetProvider/
+RAGAdapter)다 — DART/Wiki는 코드로 꽂혀 있고, 런타임 플러그인 주입(외부 도메인 등록)은 다음 단계.

@@ -8,10 +8,14 @@ gate_runs/
 !README.md
 !docs/JOURNEY.md
 !docs/portability.md
+!docs/interfaces.md
 !KNOWN_ISSUES.md
+!data/wiki_eval/LICENSE.md
+!docs/remediation_catalog.md
 
 # 재생성 가능한 무거운 부산물
 data/index/
+data/wiki_index/
 gate_runs/
 data/eval_review_state.json
 

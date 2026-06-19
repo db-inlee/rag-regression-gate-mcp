@@ -1,0 +1,16 @@
+{
+  "run_id": "wiki_cand_topk1_1801e7178f61",
+  "answerable_accuracy": 0.6667,
+  "answerable_total": 12,
+  "grounded_correct": 8,
+  "unsupported_correct": 0,
+  "no_answer_accuracy": 0.625,
+  "over_answer_rate": 0.375,
+  "retrieval_success_strict": 0.75,
+  "retrieval_miss_count": 3,
+  "failure_distribution": {
+    "retrieval_miss": 3,
+    "correct": 13,
+    "hallucination": 4
+  }
+}
