@@ -33,3 +33,5 @@ reports/attribution_*.jsonl
 !reports/scenarios.json
 # 메타평가 리포트 (README 링크, .md 제외 규칙의 예외)
 !reports/demo_summary.md
+build/
+*.egg-info/
