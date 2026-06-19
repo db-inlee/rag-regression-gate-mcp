@@ -14,6 +14,7 @@ gate_runs/
 
 # 재생성 가능한 무거운 부산물
 data/index/
+data/wiki_index/
 gate_runs/
 data/eval_review_state.json
 

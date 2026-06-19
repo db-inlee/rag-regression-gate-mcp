@@ -1,0 +1,25 @@
+{
+  "type": "header",
+  "run_id": "wiki_20260620_052136_1801e7178f61",
+  "domain": "wiki",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "generation_model": "gpt-4o-mini",
+  "n_cases": 20,
+  "config": {
+    "chunk_size": 400,
+    "chunk_overlap": 50,
+    "top_k": 3,
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "generation_model": "gpt-4o-mini",
+    "judge_model": "gpt-4o",
+    "reranker_enabled": false,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_fetch_k": 20,
+    "vectorstore": "chroma",
+    "persist_dir": "data/wiki_index",
+    "collection_base": "wiki",
+    "seed": 0,
+    "index_signature": "1801e7178f61",
+    "collection_name": "wiki_1801e7178f61"
+  }
+}
