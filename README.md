@@ -87,6 +87,37 @@ run_gate("examples/baseline", "examples/demo_regression")
 > "사람이 적용 후 이 게이트로 재검증" 문구가 붙는다. MCP 계층은 통계 로직을 한 줄도 재구현하지 않고
 > 기존 엔진(`detect`→`gate`)을 **호출만** 한다 → CLI와 수치 동일.
 
+### `analyze_failures` — 단일 실행 진단 (run_gate의 짝)
+
+`run_gate`가 **두 실행을 비교**(회귀 감지)한다면, `analyze_failures`는 **한 실행을 진단**한다 —
+*"바꿨더니 나빠졌나?"* 가 아니라 *"지금 어디가 약하고, 뭘 먼저 손볼까?"* 에 답한다. 운영자의 두 번째
+니즈(성능을 올려야 할 때)를 위한 도구다. `run_dir` 하나만 받는다(비교 대상이 없으니 통계 검정 없음).
+
+```
+analyze_failures("examples/baseline")
+ → failure_distribution: {retrieval_miss: 65, correct: 34, hallucination: 1}
+   bottleneck: retrieval ("retrieval_miss가 65건으로 가장 큰 병목")
+   groundedness: grounded 17 / unsupported 2 (맞았지만 근거 미실재 = 리스크)
+   ragas_equivalent: context_recall 0.19, faithfulness 0.89, answer_correctness 0.20
+   improvement_priorities: ① 검색(top_k↑·청크 축소) ② 표값 슬라이스 집중 … (적용 후 run_gate로 검증)
+```
+
+**RAGAS 환산 (judge 없이 결정적, 차별점)** — RAGAS의 친숙한 지표를 우리의 **결정적 측정으로 환산**한다.
+LLM judge 호출이 없어 **같은 입력엔 같은 값**(재현 가능):
+
+| RAGAS 개념 | 우리 결정적 측정 | 비고 |
+|---|---|---|
+| `context_recall` | `retrieval_success_strict` (gold 근거 ⊆ retrieved) | judge 없음 |
+| `faithfulness` | `grounded / (grounded + unsupported)` | judge 없음 |
+| `answer_correctness` | `answerable_accuracy` (grounded 기준) | judge 없음 |
+| ~~`context_precision`~~ | — | **의도적 생략**: precomputed attribution(gold-free)만으론 산출 불가 |
+| ~~`answer_relevancy`~~ | — | **의도적 생략**: judge 필요 → 결정성과 충돌 |
+
+> **gold-free·결정적**: `analyze_failures`는 precomputed `attribution.jsonl`(케이스별 boolean)만 집계한다 —
+> `eval_cases.jsonl`(gold)을 다시 읽지 않으므로 Phase 6의 gold 제거를 되돌리지 않는다. 새 통계/채점 로직 0.
+> **suggestion-only + 닫힌 루프**: 개선 우선순위는 "검토 후보"이며, `analyze_failures`(약점 파악) →
+> 개선 적용 → `run_gate`(개선 검증)로 닫는다.
+
 ---
 
 ## 메타 평가 — "분별 있게 반응한다" (Phase 5, config만 바꿔 생성)

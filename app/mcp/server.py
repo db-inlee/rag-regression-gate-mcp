@@ -18,6 +18,7 @@ from pathlib import Path
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from app.mcp.analyze import FailureAnalysis, build_analysis
 from app.mcp.suggest import build_suggestions
 from app.regression.detect import detect_paths
 from app.regression.gate import evaluate, exit_code, line
@@ -85,6 +86,21 @@ def run_gate(baseline_dir: str, candidate_dir: str) -> GateResult:
 
 
 mcp.tool(run_gate)  # register without shadowing the callable (keeps run_gate importable/testable)
+
+
+def analyze_failures(run_dir: str) -> FailureAnalysis:
+    """Diagnose a SINGLE RAG run-log: where is it weak, and what to fix first?
+    Pair to run_gate (which compares two runs to detect regressions) — this needs
+    only one run_dir (containing run.jsonl + attribution.jsonl). Returns the failure
+    distribution, the bottleneck pipeline stage, per-slice failure rates, a
+    groundedness breakdown, RAGAS-equivalent metrics (deterministic, no LLM judge),
+    and improvement priorities. Gold-free and deterministic (aggregates the
+    precomputed attribution; no judge re-run). Suggestion-only: priorities are review
+    candidates — apply them, then re-verify with run_gate (closed loop)."""
+    return build_analysis(run_dir)
+
+
+mcp.tool(analyze_failures)  # register without shadowing (keeps it importable/testable)
 
 
 if __name__ == "__main__":
