@@ -1,0 +1,299 @@
+{
+  "baseline_run": "noise_20260616_204154_1a13b95a9b06_r1",
+  "a_chunk_size": 400,
+  "scenarios": [
+    {
+      "name": "A1_chunk400",
+      "run_id": "cand_A1_chunk400_4f06db228946",
+      "config": {
+        "chunk_size": 400,
+        "chunk_overlap": 150,
+        "top_k": 5,
+        "embedding_model": "BAAI/bge-m3",
+        "generation_model": "gpt-4o-mini",
+        "judge_model": "gpt-4o",
+        "reranker_enabled": false,
+        "reranker_model": "BAAI/bge-reranker-v2-m3",
+        "reranker_fetch_k": 20,
+        "vectorstore": "chroma",
+        "persist_dir": "data/index",
+        "collection_base": "dart",
+        "seed": 0,
+        "index_signature": "4f06db228946",
+        "collection_name": "dart_4f06db228946"
+      },
+      "reindexed": true,
+      "metrics": {
+        "run_id": "cand_A1_chunk400_4f06db228946",
+        "answerable_accuracy": 0.1765,
+        "answerable_accuracy_raw": 0.1882,
+        "grounded_correct": 15,
+        "unsupported_correct": 1,
+        "answerable_total": 85,
+        "no_answer_accuracy": 1.0,
+        "over_answer_rate": 0.0,
+        "retrieval_success_strict": 0.1765,
+        "retrieval_success_value_present": 0.1882,
+        "per_slice": {
+          "table_value": {
+            "total": 40,
+            "correct": 2,
+            "grounded": 1,
+            "accuracy": 0.05
+          },
+          "numeric_reasoning": {
+            "total": 20,
+            "correct": 0,
+            "grounded": 0,
+            "accuracy": 0.0
+          },
+          "no_answer": {
+            "total": 15,
+            "correct": 15,
+            "grounded": 0,
+            "accuracy": 1.0
+          },
+          "body_text": {
+            "total": 25,
+            "correct": 14,
+            "grounded": 14,
+            "accuracy": 0.56
+          }
+        },
+        "failure_distribution": {
+          "retrieval_miss": 69,
+          "correct": 31
+        },
+        "judge_accuracy": 0.9867,
+        "operational": {
+          "avg_latency_ms": 1031.7,
+          "total_llm_calls": 100,
+          "total_tokens": 135936,
+          "est_cost_usd": 0.0208
+        }
+      },
+      "wall_s": 3263.8,
+      "gen_cost_usd": 0.0208
+    },
+    {
+      "name": "A2_topk1",
+      "run_id": "cand_A2_topk1_1a13b95a9b06",
+      "config": {
+        "chunk_size": 1000,
+        "chunk_overlap": 150,
+        "top_k": 1,
+        "embedding_model": "BAAI/bge-m3",
+        "generation_model": "gpt-4o-mini",
+        "judge_model": "gpt-4o",
+        "reranker_enabled": false,
+        "reranker_model": "BAAI/bge-reranker-v2-m3",
+        "reranker_fetch_k": 20,
+        "vectorstore": "chroma",
+        "persist_dir": "data/index",
+        "collection_base": "dart",
+        "seed": 0,
+        "index_signature": "1a13b95a9b06",
+        "collection_name": "dart_1a13b95a9b06"
+      },
+      "reindexed": false,
+      "metrics": {
+        "run_id": "cand_A2_topk1_1a13b95a9b06",
+        "answerable_accuracy": 0.0824,
+        "answerable_accuracy_raw": 0.1412,
+        "grounded_correct": 7,
+        "unsupported_correct": 5,
+        "answerable_total": 85,
+        "no_answer_accuracy": 1.0,
+        "over_answer_rate": 0.0,
+        "retrieval_success_strict": 0.0824,
+        "retrieval_success_value_present": 0.0824,
+        "per_slice": {
+          "table_value": {
+            "total": 40,
+            "correct": 0,
+            "grounded": 0,
+            "accuracy": 0.0
+          },
+          "numeric_reasoning": {
+            "total": 20,
+            "correct": 2,
+            "grounded": 0,
+            "accuracy": 0.1
+          },
+          "no_answer": {
+            "total": 15,
+            "correct": 15,
+            "grounded": 0,
+            "accuracy": 1.0
+          },
+          "body_text": {
+            "total": 25,
+            "correct": 10,
+            "grounded": 7,
+            "accuracy": 0.4
+          }
+        },
+        "failure_distribution": {
+          "retrieval_miss": 73,
+          "correct": 27
+        },
+        "judge_accuracy": 0.9867,
+        "operational": {
+          "avg_latency_ms": 805.0,
+          "total_llm_calls": 100,
+          "total_tokens": 57950,
+          "est_cost_usd": 0.0089
+        }
+      },
+      "wall_s": 114.9,
+      "gen_cost_usd": 0.0089
+    },
+    {
+      "name": "B_reranker",
+      "run_id": "cand_B_reranker_1a13b95a9b06",
+      "config": {
+        "chunk_size": 1000,
+        "chunk_overlap": 150,
+        "top_k": 5,
+        "embedding_model": "BAAI/bge-m3",
+        "generation_model": "gpt-4o-mini",
+        "judge_model": "gpt-4o",
+        "reranker_enabled": true,
+        "reranker_model": "BAAI/bge-reranker-v2-m3",
+        "reranker_fetch_k": 20,
+        "vectorstore": "chroma",
+        "persist_dir": "data/index",
+        "collection_base": "dart",
+        "seed": 0,
+        "index_signature": "1a13b95a9b06",
+        "collection_name": "dart_1a13b95a9b06"
+      },
+      "reindexed": false,
+      "metrics": {
+        "run_id": "cand_B_reranker_1a13b95a9b06",
+        "answerable_accuracy": 0.1882,
+        "answerable_accuracy_raw": 0.2353,
+        "grounded_correct": 16,
+        "unsupported_correct": 4,
+        "answerable_total": 85,
+        "no_answer_accuracy": 1.0,
+        "over_answer_rate": 0.0,
+        "retrieval_success_strict": 0.2353,
+        "retrieval_success_value_present": 0.2824,
+        "per_slice": {
+          "table_value": {
+            "total": 40,
+            "correct": 5,
+            "grounded": 2,
+            "accuracy": 0.125
+          },
+          "numeric_reasoning": {
+            "total": 20,
+            "correct": 1,
+            "grounded": 0,
+            "accuracy": 0.05
+          },
+          "no_answer": {
+            "total": 15,
+            "correct": 15,
+            "grounded": 0,
+            "accuracy": 1.0
+          },
+          "body_text": {
+            "total": 25,
+            "correct": 14,
+            "grounded": 14,
+            "accuracy": 0.56
+          }
+        },
+        "failure_distribution": {
+          "retrieval_miss": 60,
+          "correct": 35,
+          "hallucination": 5
+        },
+        "judge_accuracy": 0.9867,
+        "operational": {
+          "avg_latency_ms": 9171.2,
+          "total_llm_calls": 100,
+          "total_tokens": 245655,
+          "est_cost_usd": 0.0375
+        }
+      },
+      "wall_s": 953.7,
+      "gen_cost_usd": 0.0375
+    },
+    {
+      "name": "C_overlap155",
+      "run_id": "cand_C_overlap155_4433a56508ce",
+      "config": {
+        "chunk_size": 1000,
+        "chunk_overlap": 155,
+        "top_k": 5,
+        "embedding_model": "BAAI/bge-m3",
+        "generation_model": "gpt-4o-mini",
+        "judge_model": "gpt-4o",
+        "reranker_enabled": false,
+        "reranker_model": "BAAI/bge-reranker-v2-m3",
+        "reranker_fetch_k": 20,
+        "vectorstore": "chroma",
+        "persist_dir": "data/index",
+        "collection_base": "dart",
+        "seed": 0,
+        "index_signature": "4433a56508ce",
+        "collection_name": "dart_4433a56508ce"
+      },
+      "reindexed": true,
+      "metrics": {
+        "run_id": "cand_C_overlap155_4433a56508ce",
+        "answerable_accuracy": 0.1882,
+        "answerable_accuracy_raw": 0.2235,
+        "grounded_correct": 16,
+        "unsupported_correct": 3,
+        "answerable_total": 85,
+        "no_answer_accuracy": 1.0,
+        "over_answer_rate": 0.0,
+        "retrieval_success_strict": 0.1647,
+        "retrieval_success_value_present": 0.2,
+        "per_slice": {
+          "table_value": {
+            "total": 40,
+            "correct": 2,
+            "grounded": 1,
+            "accuracy": 0.05
+          },
+          "numeric_reasoning": {
+            "total": 20,
+            "correct": 2,
+            "grounded": 1,
+            "accuracy": 0.1
+          },
+          "no_answer": {
+            "total": 15,
+            "correct": 15,
+            "grounded": 0,
+            "accuracy": 1.0
+          },
+          "body_text": {
+            "total": 25,
+            "correct": 15,
+            "grounded": 14,
+            "accuracy": 0.6
+          }
+        },
+        "failure_distribution": {
+          "retrieval_miss": 66,
+          "correct": 34
+        },
+        "judge_accuracy": 0.9867,
+        "operational": {
+          "avg_latency_ms": 1239.7,
+          "total_llm_calls": 100,
+          "total_tokens": 245464,
+          "est_cost_usd": 0.0374
+        }
+      },
+      "wall_s": 2374.0,
+      "gen_cost_usd": 0.0374
+    }
+  ]
+}

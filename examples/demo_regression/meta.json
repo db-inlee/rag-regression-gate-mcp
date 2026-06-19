@@ -1,0 +1,5 @@
+{
+  "role": "demo-regression",
+  "source": "top_k 5→1 (Phase 5 A-2)",
+  "note": "회귀 데모 → 게이트 FAIL 기대."
+}

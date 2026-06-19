@@ -1,0 +1,5 @@
+{
+  "role": "default-candidate",
+  "source_run": "noise_20260616_204154_1a13b95a9b06_r2",
+  "note": "무변화(같은 config 다른 실행) → PASS 기대. PR은 이 디렉터리를 자기 run-log+attribution으로 교체."
+}

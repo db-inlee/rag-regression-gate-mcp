@@ -1,0 +1,50 @@
+{
+  "run_id": "run_20260616_190521_1a13b95a9b06",
+  "answerable_accuracy": 0.2,
+  "answerable_accuracy_raw": 0.2235,
+  "grounded_correct": 17,
+  "unsupported_correct": 2,
+  "answerable_total": 85,
+  "no_answer_accuracy": 1.0,
+  "over_answer_rate": 0.0,
+  "retrieval_success_strict": 0.1882,
+  "retrieval_success_value_present": 0.2235,
+  "per_slice": {
+    "table_value": {
+      "total": 40,
+      "correct": 3,
+      "grounded": 2,
+      "accuracy": 0.075
+    },
+    "numeric_reasoning": {
+      "total": 20,
+      "correct": 2,
+      "grounded": 1,
+      "accuracy": 0.1
+    },
+    "no_answer": {
+      "total": 15,
+      "correct": 15,
+      "grounded": 0,
+      "accuracy": 1.0
+    },
+    "body_text": {
+      "total": 25,
+      "correct": 14,
+      "grounded": 14,
+      "accuracy": 0.56
+    }
+  },
+  "failure_distribution": {
+    "retrieval_miss": 65,
+    "correct": 34,
+    "hallucination": 1
+  },
+  "judge_accuracy": 0.9867,
+  "operational": {
+    "avg_latency_ms": 1300.7,
+    "total_llm_calls": 100,
+    "total_tokens": 248217,
+    "est_cost_usd": 0.0379
+  }
+}

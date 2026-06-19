@@ -1,0 +1,5 @@
+{
+  "role": "demo-neutral",
+  "source": "noise r2 (같은 config, 무변화)",
+  "expect": "PASS / exit 0"
+}

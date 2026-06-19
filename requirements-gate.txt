@@ -1,0 +1,5 @@
+# CI gate (Job 2) dependencies — intentionally minimal.
+# The gate only does statistics over enriched attribution; NO LLM, NO embedding,
+# NO torch / sentence-transformers / openai / chromadb / langchain, NO 2.2GB model.
+# Bootstrap is pure Python (random/statistics), so numpy/scipy are not needed either.
+pydantic>=2.0

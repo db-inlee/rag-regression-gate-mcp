@@ -1,0 +1,8 @@
+{
+  "role": "baseline",
+  "source_run": "noise_20260616_204154_1a13b95a9b06_r1",
+  "config_signature": "1a13b95a9b06",
+  "source_run_date": "2026-06-16",
+  "committed": "2026-06-17",
+  "note": "noise 5회 중 r1 (temperature=0, seed=0). gate가 비교 기준으로 사용."
+}

@@ -1,0 +1,46 @@
+name: RAG Regression Gate
+
+# Job 2 (active): lightweight gate. Compares a PR-provided candidate (run-log +
+# attribution) against the repo-fixed baseline using bootstrap significance +
+# noise band. NO LLM / embedding / torch / 2.2GB model — only `pydantic`.
+#
+# Model 1 (current): the heavy RAG run happens OUTSIDE CI; the PR commits its
+# candidate artifacts into examples/candidate/. To switch to Model 2 (fully
+# automatic), connect the generate-candidate.yml job (Job 1, skeleton) to the
+# pull_request trigger and have it write examples/candidate/ before this gate —
+# THIS gate job does not change at all.
+#
+# Branch protection: make this check "Required" in repo Settings → Branches so a
+# FAIL (exit 1) blocks merge. The workflow only guarantees a non-zero exit on FAIL.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install light deps (gate only — no LLM/embedding)
+        run: pip install -r requirements-gate.txt
+
+      - name: Run regression gate (baseline vs PR candidate)
+        run: |
+          python scripts/run_gate.py \
+            --baseline examples/baseline \
+            --candidate examples/candidate
+        # exit 1 on FAIL → CI red → blocks merge (when set as Required check).
+        # WARN / PASS → exit 0.
+
+      - name: Upload gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-report
+          path: gate_runs/

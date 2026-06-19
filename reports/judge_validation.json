@@ -1,0 +1,1029 @@
+{
+  "judge_model": "gpt-4o",
+  "judge_accuracy": 0.9867,
+  "trustworthy": true,
+  "confusion_matrix": {
+    "TP": 25,
+    "FN": 0,
+    "FP": 1,
+    "TN": 49
+  },
+  "by_probe_kind": {
+    "pos": {
+      "correct": 25,
+      "total": 25
+    },
+    "neg_diff_paragraph": {
+      "correct": 25,
+      "total": 25
+    },
+    "neg_subtle": {
+      "correct": 24,
+      "total": 25
+    }
+  },
+  "parse_failures": 0,
+  "invalid_subtle_dropped": [],
+  "n_probes": 75,
+  "results": [
+    {
+      "id": "case_076",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2023년 보고서 기준, 이사의 보수는 어떤 규정에 따라 지급되는가?",
+      "kp": [
+        "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급된다."
+      ],
+      "ans": "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급된다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_076",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2023년 보고서 기준, 이사의 보수는 어떤 규정에 따라 지급되는가?",
+      "kp": [
+        "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급된다."
+      ],
+      "ans": "고객 또는 거래상대방이 계약조건상 의무를 지키지 못할 때 발생한다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_076",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2023년 보고서 기준, 이사의 보수는 어떤 규정에 따라 지급되는가?",
+      "kp": [
+        "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급된다."
+      ],
+      "ans": "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급되지 않는다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_077",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2024년 보고서 기준, 2024년 TV 시장의 예상 판매량은 얼마인가?",
+      "kp": [
+        "2억 883만대"
+      ],
+      "ans": "2억 883만대",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_077",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2024년 보고서 기준, 2024년 TV 시장의 예상 판매량은 얼마인가?",
+      "kp": [
+        "2억 883만대"
+      ],
+      "ans": "주주총회의 승인을 받은 이사보수 한도 금액 내에서 지급된다. 임원처우규정 및 사외이사 처우규정에 따라 지급된다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_077",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2024년 보고서 기준, 2024년 TV 시장의 예상 판매량은 얼마인가?",
+      "kp": [
+        "2억 883만대"
+      ],
+      "ans": "2억 5천만대",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_078",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2025년 보고서 기준, 신용위험의 최대 노출금액은 무엇인가?",
+      "kp": [
+        "채권의 장부금액"
+      ],
+      "ans": "채권의 장부금액",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_078",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2025년 보고서 기준, 신용위험의 최대 노출금액은 무엇인가?",
+      "kp": [
+        "채권의 장부금액"
+      ],
+      "ans": "DS 부문 및 SDC 등의 첨단공정 증설ㆍ전환과 인프라 투자를 중심으로 52.7조원의 시설투자가 이루어졌습니다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_078",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2025년 보고서 기준, 신용위험의 최대 노출금액은 무엇인가?",
+      "kp": [
+        "채권의 장부금액"
+      ],
+      "ans": "주식의 장부금액",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_079",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2023년 보고서 기준, 회사가 보유한 지식재산권의 총 수는 얼마인가?",
+      "kp": [
+        "19,969건"
+      ],
+      "ans": "19,969건",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_079",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2023년 보고서 기준, 회사가 보유한 지식재산권의 총 수는 얼마인가?",
+      "kp": [
+        "19,969건"
+      ],
+      "ans": "전체 300mm 웨이퍼 시장의 90% 이상 점유율",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_079",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2023년 보고서 기준, 회사가 보유한 지식재산권의 총 수는 얼마인가?",
+      "kp": [
+        "19,969건"
+      ],
+      "ans": "29,969건",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_080",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2024년 보고서 기준, 회사가 공급자금융약정에 대한 정보를 공시하는 주석 번호는 무엇인가?",
+      "kp": [
+        "주석 4"
+      ],
+      "ans": "주석 4",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_080",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2024년 보고서 기준, 회사가 공급자금융약정에 대한 정보를 공시하는 주석 번호는 무엇인가?",
+      "kp": [
+        "주석 4"
+      ],
+      "ans": "거래금액 + 부대비용 감정평가 및 시장가치를 고려하여 적절히 산정",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_080",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2024년 보고서 기준, 회사가 공급자금융약정에 대한 정보를 공시하는 주석 번호는 무엇인가?",
+      "kp": [
+        "주석 4"
+      ],
+      "ans": "주석 5",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_081",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2025년 보고서 기준, 연결회사는 매출채권을 양도일에 어떻게 처리하는가?",
+      "kp": [
+        "매출채권을 양도일에 재무제표에서 제거하고 매출채권처분손익을 인식한다."
+      ],
+      "ans": "매출채권을 양도일에 재무제표에서 제거하고 매출채권처분손익을 인식한다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_081",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2025년 보고서 기준, 연결회사는 매출채권을 양도일에 어떻게 처리하는가?",
+      "kp": [
+        "매출채권을 양도일에 재무제표에서 제거하고 매출채권처분손익을 인식한다."
+      ],
+      "ans": "기업용 SSD 중심으로 수요가 확대되었다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_081",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2025년 보고서 기준, 연결회사는 매출채권을 양도일에 어떻게 처리하는가?",
+      "kp": [
+        "매출채권을 양도일에 재무제표에서 제거하고 매출채권처분손익을 인식한다."
+      ],
+      "ans": "매출채권을 양도일에 재무제표에서 유지하고 매출채권처분손익을 인식하지 않는다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_082",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2023년 보고서 기준, 부동산 개발 및 임대업으로 사업목적이 변경된 이유는 무엇인가?",
+      "kp": [
+        "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 개발 및 임대업\"으로 개정하였습니다.",
+        "신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해"
+      ],
+      "ans": "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 개발 및 임대업\"으로 개정하였습니다. 신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_082",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2023년 보고서 기준, 부동산 개발 및 임대업으로 사업목적이 변경된 이유는 무엇인가?",
+      "kp": [
+        "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 개발 및 임대업\"으로 개정하였습니다.",
+        "신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해"
+      ],
+      "ans": "동일한 자산이나 부채에 대한 활성시장에서 공시된 가격(조정되지 않은)을 사용하여 도출되는 공정가치",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_082",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2023년 보고서 기준, 부동산 개발 및 임대업으로 사업목적이 변경된 이유는 무엇인가?",
+      "kp": [
+        "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 개발 및 임대업\"으로 개정하였습니다.",
+        "신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해"
+      ],
+      "ans": "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 매매업\"으로 개정하였습니다. 신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_083",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2024년 보고서 기준, 당기말 현재 VaR로 측정한 이자율 위험 금액은 얼마인가?",
+      "kp": [
+        "339,281백만원"
+      ],
+      "ans": "339,281백만원",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_083",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2024년 보고서 기준, 당기말 현재 VaR로 측정한 이자율 위험 금액은 얼마인가?",
+      "kp": [
+        "339,281백만원"
+      ],
+      "ans": "175.2조 원",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_083",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2024년 보고서 기준, 당기말 현재 VaR로 측정한 이자율 위험 금액은 얼마인가?",
+      "kp": [
+        "339,281백만원"
+      ],
+      "ans": "239,281백만원",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_084",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2025년 보고서 기준, 순자산 공정가치와 장부금액의 차이 금액은 어디에 포함되어 있는가?",
+      "kp": [
+        "순자산지분금액에 포함되어 있음."
+      ],
+      "ans": "순자산지분금액에 포함되어 있음.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_084",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2025년 보고서 기준, 순자산 공정가치와 장부금액의 차이 금액은 어디에 포함되어 있는가?",
+      "kp": [
+        "순자산지분금액에 포함되어 있음."
+      ],
+      "ans": "즉시 당기손익으로 재분류된다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_084",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2025년 보고서 기준, 순자산 공정가치와 장부금액의 차이 금액은 어디에 포함되어 있는가?",
+      "kp": [
+        "순자산지분금액에 포함되어 있음."
+      ],
+      "ans": "순자산지분금액에 포함되어 있지 않음.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_085",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2023년 보고서 기준, 신용위험은 어떤 상황에서 발생하는가?",
+      "kp": [
+        "고객 또는 거래상대방이 계약조건상 의무를 지키지 못할 때 발생한다."
+      ],
+      "ans": "고객 또는 거래상대방이 계약조건상 의무를 지키지 못할 때 발생한다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_085",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2023년 보고서 기준, 신용위험은 어떤 상황에서 발생하는가?",
+      "kp": [
+        "고객 또는 거래상대방이 계약조건상 의무를 지키지 못할 때 발생한다."
+      ],
+      "ans": "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급된다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_085",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2023년 보고서 기준, 신용위험은 어떤 상황에서 발생하는가?",
+      "kp": [
+        "고객 또는 거래상대방이 계약조건상 의무를 지키지 못할 때 발생한다."
+      ],
+      "ans": "고객 또는 거래상대방이 계약조건상 의무를 지킬 때 발생한다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_086",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2024년 보고서 기준, 이사의 보수 지급 기준은 무엇인가?",
+      "kp": [
+        "주주총회의 승인을 받은 이사보수 한도 금액 내에서 지급된다.",
+        "임원처우규정 및 사외이사 처우규정에 따라 지급된다."
+      ],
+      "ans": "주주총회의 승인을 받은 이사보수 한도 금액 내에서 지급된다. 임원처우규정 및 사외이사 처우규정에 따라 지급된다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_086",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2024년 보고서 기준, 이사의 보수 지급 기준은 무엇인가?",
+      "kp": [
+        "주주총회의 승인을 받은 이사보수 한도 금액 내에서 지급된다.",
+        "임원처우규정 및 사외이사 처우규정에 따라 지급된다."
+      ],
+      "ans": "2억 883만대",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_086",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2024년 보고서 기준, 이사의 보수 지급 기준은 무엇인가?",
+      "kp": [
+        "주주총회의 승인을 받은 이사보수 한도 금액 내에서 지급된다.",
+        "임원처우규정 및 사외이사 처우규정에 따라 지급된다."
+      ],
+      "ans": "주주총회의 승인을 받은 이사보수 한도 금액 외에서 지급된다. 임원처우규정 및 사외이사 처우규정에 따라 지급된다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_087",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2025년 보고서 기준, 2025년 시설투자에서 어떤 부문에 중점을 두었는가?",
+      "kp": [
+        "DS 부문 및 SDC 등의 첨단공정 증설ㆍ전환과 인프라 투자를 중심으로 52.7조원의 시설투자가 이루어졌습니다."
+      ],
+      "ans": "DS 부문 및 SDC 등의 첨단공정 증설ㆍ전환과 인프라 투자를 중심으로 52.7조원의 시설투자가 이루어졌습니다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_087",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2025년 보고서 기준, 2025년 시설투자에서 어떤 부문에 중점을 두었는가?",
+      "kp": [
+        "DS 부문 및 SDC 등의 첨단공정 증설ㆍ전환과 인프라 투자를 중심으로 52.7조원의 시설투자가 이루어졌습니다."
+      ],
+      "ans": "채권의 장부금액",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_087",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2025년 보고서 기준, 2025년 시설투자에서 어떤 부문에 중점을 두었는가?",
+      "kp": [
+        "DS 부문 및 SDC 등의 첨단공정 증설ㆍ전환과 인프라 투자를 중심으로 52.7조원의 시설투자가 이루어졌습니다."
+      ],
+      "ans": "DS 부문 및 SDC 등의 첨단공정 증설ㆍ전환과 인프라 투자를 중심으로 42.7조원의 시설투자가 이루어졌습니다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_088",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2023년 보고서 기준, 300mm 웨이퍼 시장에서 주요 공급업체의 점유율은 얼마인가?",
+      "kp": [
+        "전체 300mm 웨이퍼 시장의 90% 이상 점유율"
+      ],
+      "ans": "전체 300mm 웨이퍼 시장의 90% 이상 점유율",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_088",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2023년 보고서 기준, 300mm 웨이퍼 시장에서 주요 공급업체의 점유율은 얼마인가?",
+      "kp": [
+        "전체 300mm 웨이퍼 시장의 90% 이상 점유율"
+      ],
+      "ans": "19,969건",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_088",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2023년 보고서 기준, 300mm 웨이퍼 시장에서 주요 공급업체의 점유율은 얼마인가?",
+      "kp": [
+        "전체 300mm 웨이퍼 시장의 90% 이상 점유율"
+      ],
+      "ans": "전체 300mm 웨이퍼 시장의 70% 이상 점유율",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_089",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2024년 보고서 기준, 법인간 매매금액 산정 기준은 무엇인가?",
+      "kp": [
+        "거래금액 + 부대비용",
+        "감정평가 및 시장가치를 고려하여 적절히 산정"
+      ],
+      "ans": "거래금액 + 부대비용 감정평가 및 시장가치를 고려하여 적절히 산정",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_089",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2024년 보고서 기준, 법인간 매매금액 산정 기준은 무엇인가?",
+      "kp": [
+        "거래금액 + 부대비용",
+        "감정평가 및 시장가치를 고려하여 적절히 산정"
+      ],
+      "ans": "주석 4",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_089",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2024년 보고서 기준, 법인간 매매금액 산정 기준은 무엇인가?",
+      "kp": [
+        "거래금액 + 부대비용",
+        "감정평가 및 시장가치를 고려하여 적절히 산정"
+      ],
+      "ans": "거래금액 - 부대비용 감정평가 및 시장가치를 고려하여 적절히 산정",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_090",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2025년 보고서 기준, 2025년의 수요는 어떤 제품 중심으로 확대되었는가?",
+      "kp": [
+        "기업용 SSD 중심으로 수요가 확대되었다."
+      ],
+      "ans": "기업용 SSD 중심으로 수요가 확대되었다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_090",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2025년 보고서 기준, 2025년의 수요는 어떤 제품 중심으로 확대되었는가?",
+      "kp": [
+        "기업용 SSD 중심으로 수요가 확대되었다."
+      ],
+      "ans": "매출채권을 양도일에 재무제표에서 제거하고 매출채권처분손익을 인식한다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_090",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2025년 보고서 기준, 2025년의 수요는 어떤 제품 중심으로 확대되었는가?",
+      "kp": [
+        "기업용 SSD 중심으로 수요가 확대되었다."
+      ],
+      "ans": "소비자용 SSD 중심으로 수요가 확대되었다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_091",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2023년 보고서 기준, 공정가치 서열체계에서 수준1의 정의는 무엇인가?",
+      "kp": [
+        "동일한 자산이나 부채에 대한 활성시장에서 공시된 가격(조정되지 않은)을 사용하여 도출되는 공정가치"
+      ],
+      "ans": "동일한 자산이나 부채에 대한 활성시장에서 공시된 가격(조정되지 않은)을 사용하여 도출되는 공정가치",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_091",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2023년 보고서 기준, 공정가치 서열체계에서 수준1의 정의는 무엇인가?",
+      "kp": [
+        "동일한 자산이나 부채에 대한 활성시장에서 공시된 가격(조정되지 않은)을 사용하여 도출되는 공정가치"
+      ],
+      "ans": "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 개발 및 임대업\"으로 개정하였습니다. 신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_091",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2023년 보고서 기준, 공정가치 서열체계에서 수준1의 정의는 무엇인가?",
+      "kp": [
+        "동일한 자산이나 부채에 대한 활성시장에서 공시된 가격(조정되지 않은)을 사용하여 도출되는 공정가치"
+      ],
+      "ans": "동일한 자산이나 부채에 대한 비활성시장에서 공시된 가격(조정된)을 사용하여 도출되는 공정가치",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_092",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2024년 보고서 기준, 2024년 연간 매출액은 얼마인가?",
+      "kp": [
+        "175.2조 원"
+      ],
+      "ans": "175.2조 원",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_092",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2024년 보고서 기준, 2024년 연간 매출액은 얼마인가?",
+      "kp": [
+        "175.2조 원"
+      ],
+      "ans": "339,281백만원",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_092",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2024년 보고서 기준, 2024년 연간 매출액은 얼마인가?",
+      "kp": [
+        "175.2조 원"
+      ],
+      "ans": "275.2조 원",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_093",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2025년 보고서 기준, 위험회피 대상 미래현금흐름이 이자율지표 개혁 이외의 사유로 더 이상 발생하지 않을 경우 현금흐름위험회피적립금누계액은 어떻게 되나요?",
+      "kp": [
+        "즉시 당기손익으로 재분류된다."
+      ],
+      "ans": "즉시 당기손익으로 재분류된다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_093",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2025년 보고서 기준, 위험회피 대상 미래현금흐름이 이자율지표 개혁 이외의 사유로 더 이상 발생하지 않을 경우 현금흐름위험회피적립금누계액은 어떻게 되나요?",
+      "kp": [
+        "즉시 당기손익으로 재분류된다."
+      ],
+      "ans": "순자산지분금액에 포함되어 있음.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_093",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2025년 보고서 기준, 위험회피 대상 미래현금흐름이 이자율지표 개혁 이외의 사유로 더 이상 발생하지 않을 경우 현금흐름위험회피적립금누계액은 어떻게 되나요?",
+      "kp": [
+        "즉시 당기손익으로 재분류된다."
+      ],
+      "ans": "즉시 당기손익으로 재조정된다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_094",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2023년 보고서 기준, 해외증권시장에서 거래되는 증권거래소는 어디인가?",
+      "kp": [
+        "런던 증권거래소",
+        "룩셈부르크 증권거래소"
+      ],
+      "ans": "런던 증권거래소 룩셈부르크 증권거래소",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_094",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2023년 보고서 기준, 해외증권시장에서 거래되는 증권거래소는 어디인가?",
+      "kp": [
+        "런던 증권거래소",
+        "룩셈부르크 증권거래소"
+      ],
+      "ans": "이사의 보수는 임원처우규정 및 사외이사 처우규정에 따라 지급된다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_094",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2023년 보고서 기준, 해외증권시장에서 거래되는 증권거래소는 어디인가?",
+      "kp": [
+        "런던 증권거래소",
+        "룩셈부르크 증권거래소"
+      ],
+      "ans": "런던 증권거래소 뉴욕 증권거래소",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_095",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2024년 보고서 기준, 보고기간 종료일 현재 신용위험의 최대 노출금액은 무엇인가?",
+      "kp": [
+        "채권의 장부금액"
+      ],
+      "ans": "채권의 장부금액",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_095",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2024년 보고서 기준, 보고기간 종료일 현재 신용위험의 최대 노출금액은 무엇인가?",
+      "kp": [
+        "채권의 장부금액"
+      ],
+      "ans": "2억 883만대",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_095",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2024년 보고서 기준, 보고기간 종료일 현재 신용위험의 최대 노출금액은 무엇인가?",
+      "kp": [
+        "채권의 장부금액"
+      ],
+      "ans": "주식의 장부금액",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_096",
+      "kind": "pos",
+      "expected": true,
+      "q": "삼성전자 2025년 보고서 기준, 재무위험관리의 주요 대상인 자산은 무엇으로 구성되어 있는가?",
+      "kp": [
+        "현금및현금성자산",
+        "단기금융상품",
+        "상각후원가금융자산"
+      ],
+      "ans": "현금및현금성자산 단기금융상품 상각후원가금융자산",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_096",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "삼성전자 2025년 보고서 기준, 재무위험관리의 주요 대상인 자산은 무엇으로 구성되어 있는가?",
+      "kp": [
+        "현금및현금성자산",
+        "단기금융상품",
+        "상각후원가금융자산"
+      ],
+      "ans": "채권의 장부금액",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_096",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "삼성전자 2025년 보고서 기준, 재무위험관리의 주요 대상인 자산은 무엇으로 구성되어 있는가?",
+      "kp": [
+        "현금및현금성자산",
+        "단기금융상품",
+        "상각후원가금융자산"
+      ],
+      "ans": "현금및현금성자산 장기금융상품 상각후원가금융자산",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_097",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2023년 보고서 기준, 서버 메모리의 수요가 증가하는 이유는 무엇인가?",
+      "kp": [
+        "컴퓨팅 서비스 수요 증가",
+        "클라우드 컴퓨팅 도입 및 데이터 양 증가",
+        "AI와 ML 기반 고차원 분석 애플리케이션 성장"
+      ],
+      "ans": "컴퓨팅 서비스 수요 증가 클라우드 컴퓨팅 도입 및 데이터 양 증가 AI와 ML 기반 고차원 분석 애플리케이션 성장",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_097",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2023년 보고서 기준, 서버 메모리의 수요가 증가하는 이유는 무엇인가?",
+      "kp": [
+        "컴퓨팅 서비스 수요 증가",
+        "클라우드 컴퓨팅 도입 및 데이터 양 증가",
+        "AI와 ML 기반 고차원 분석 애플리케이션 성장"
+      ],
+      "ans": "19,969건",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_097",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2023년 보고서 기준, 서버 메모리의 수요가 증가하는 이유는 무엇인가?",
+      "kp": [
+        "컴퓨팅 서비스 수요 증가",
+        "클라우드 컴퓨팅 도입 및 데이터 양 증가",
+        "AI와 ML 기반 고차원 분석 애플리케이션 성장"
+      ],
+      "ans": "컴퓨팅 서비스 수요 감소 클라우드 컴퓨팅 도입 및 데이터 양 감소 AI와 ML 기반 저차원 분석 애플리케이션 성장",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_098",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2024년 보고서 기준, 2025년 전체 PC 출하량 중 AI PC 출하량의 비율은 얼마로 예상되는가?",
+      "kp": [
+        "40%"
+      ],
+      "ans": "40%",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_098",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2024년 보고서 기준, 2025년 전체 PC 출하량 중 AI PC 출하량의 비율은 얼마로 예상되는가?",
+      "kp": [
+        "40%"
+      ],
+      "ans": "주석 4",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_098",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2024년 보고서 기준, 2025년 전체 PC 출하량 중 AI PC 출하량의 비율은 얼마로 예상되는가?",
+      "kp": [
+        "40%"
+      ],
+      "ans": "30%",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_099",
+      "kind": "pos",
+      "expected": true,
+      "q": "하이닉스 2025년 보고서 기준, 어떤 제품이 AI 가속기 경쟁력 강화를 뒷받침하고 있는가?",
+      "kp": [
+        "HBM3E"
+      ],
+      "ans": "HBM3E",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_099",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "하이닉스 2025년 보고서 기준, 어떤 제품이 AI 가속기 경쟁력 강화를 뒷받침하고 있는가?",
+      "kp": [
+        "HBM3E"
+      ],
+      "ans": "매출채권을 양도일에 재무제표에서 제거하고 매출채권처분손익을 인식한다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_099",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "하이닉스 2025년 보고서 기준, 어떤 제품이 AI 가속기 경쟁력 강화를 뒷받침하고 있는가?",
+      "kp": [
+        "HBM3E"
+      ],
+      "ans": "HBM2E",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_100",
+      "kind": "pos",
+      "expected": true,
+      "q": "현대자동차 2023년 보고서 기준, 주주간 계약에 따라 지배주주가 중대한 계약 위반시 투자자는 무엇을 할 수 있는가?",
+      "kp": [
+        "투자자는 지배주주에게 풋옵션을 행사하여 투자자 보유 지분을 매각할 수 있다."
+      ],
+      "ans": "투자자는 지배주주에게 풋옵션을 행사하여 투자자 보유 지분을 매각할 수 있다.",
+      "judge_correct": true,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_100",
+      "kind": "neg_diff_paragraph",
+      "expected": false,
+      "q": "현대자동차 2023년 보고서 기준, 주주간 계약에 따라 지배주주가 중대한 계약 위반시 투자자는 무엇을 할 수 있는가?",
+      "kp": [
+        "투자자는 지배주주에게 풋옵션을 행사하여 투자자 보유 지분을 매각할 수 있다."
+      ],
+      "ans": "정관 상 기존의 사업목적인 \"부동산 임대업\"을 \"부동산 개발 및 임대업\"으로 개정하였습니다. 신축 사업장 내 임대업장 구성 등을 위한 부동산 개발업 자격 요건 충족을 위해",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    },
+    {
+      "id": "case_100",
+      "kind": "neg_subtle",
+      "expected": false,
+      "q": "현대자동차 2023년 보고서 기준, 주주간 계약에 따라 지배주주가 중대한 계약 위반시 투자자는 무엇을 할 수 있는가?",
+      "kp": [
+        "투자자는 지배주주에게 풋옵션을 행사하여 투자자 보유 지분을 매각할 수 있다."
+      ],
+      "ans": "투자자는 지배주주에게 콜옵션을 행사하여 투자자 보유 지분을 매각할 수 있다.",
+      "judge_correct": false,
+      "parse_ok": true,
+      "judge_version": "gpt-4o-2024-08-06"
+    }
+  ]
+}

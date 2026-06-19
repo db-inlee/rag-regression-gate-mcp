@@ -1,0 +1,74 @@
+name: Generate Candidate (RAG run)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1 — the HEAVY RAG run (embedding + LLM). SKELETON / Model-2 path.
+#
+# Trigger: workflow_dispatch ONLY (manual). It is deliberately NOT connected to
+# pull_request — running RAG (bge-m3 2.2GB + 100×LLM + gpt-4o judge) on every PR
+# is heavy and costs money. The active PR gate is Job 2 (regression-gate.yml),
+# which is light and needs no LLM/embedding.
+#
+# ── Model 1 (current, active) ──
+#   Heavy RAG runs OUTSIDE CI; the PR author commits candidate artifacts
+#   (run.jsonl + enriched attribution.jsonl) into examples/candidate/. Job 2 gates.
+#
+# ── Model 2 (full auto — flip TWO things, gate unchanged) ──
+#   1) change this file's trigger from `workflow_dispatch` to `pull_request`
+#   2) make the last step hand its output to the gate — either write
+#      examples/candidate/ and let regression-gate.yml run, or call
+#      `run_gate.py --baseline examples/baseline --candidate gate_runs/candidate`
+#      here as a follow-up step.
+#   Job 2 (the gate logic) does NOT change a single line — it still just consumes
+#   run-log + attribution. (See docs/portability.md: "엔진은 run-log만 소비".)
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:   # manual only — do NOT add pull_request unless going Model 2
+
+jobs:
+  generate-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Cache bge-m3 (2.2GB) so it is downloaded once, not every run.
+      # Key = model name + version → bump to invalidate on model change.
+      - name: Restore embedding model cache (bge-m3)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-BAAI-bge-m3-v1
+
+      - name: Install full deps (heavy — torch/sentence-transformers/openai/chromadb)
+        run: pip install -e .
+
+      # OPENAI_API_KEY from secrets (placeholder). If unset, generate_candidate.py
+      # prints a notice and exits 0 (skips) — skeleton stays green without a key.
+      - name: Generate candidate (index → pipeline → score+judge → attribution)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Steps inside generate_candidate.py:
+          #   1) ensure bge-m3 signature index (cached model)
+          #   2) pipeline over 100 eval cases (retrieve + generate)
+          #   3) deterministic scoring + gpt-4o judge (body_text)
+          #   4) attribution + per-case gate fields (enriched)
+          #   5) write self-contained candidate -> gate_runs/candidate/
+          python scripts/generate_candidate.py --out gate_runs/candidate
+
+      - name: Upload candidate artifacts (hand-off to gate / Job 2)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate
+          path: gate_runs/candidate/
+
+      # ── Model 2 hand-off (commented; uncomment + switch trigger to pull_request) ──
+      # - name: Gate the freshly generated candidate
+      #   run: |
+      #     pip install -r requirements-gate.txt
+      #     python scripts/run_gate.py --baseline examples/baseline --candidate gate_runs/candidate

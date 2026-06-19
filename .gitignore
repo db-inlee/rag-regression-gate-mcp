@@ -1,0 +1,31 @@
+.env
+__pycache__/
+*.pyc
+gate_runs/
+
+# 내부 작업 문서 제외 — README와 핵심 docs만 공개
+**/*.md
+!README.md
+!docs/JOURNEY.md
+!docs/portability.md
+!KNOWN_ISSUES.md
+
+# 재생성 가능한 무거운 부산물
+data/index/
+gate_runs/
+data/eval_review_state.json
+
+# 원본 PDF (저작권/용량 — 추출본만 공개)
+data/corpus/raw/*.pdf
+
+# raw 실행 로그 (examples/에 핵심 복사본 있음)
+reports/runs/
+reports/attribution_*.jsonl
+
+# 단, reports/의 요약 산출물은 유지 (README가 링크):
+!reports/noise_band.json
+!reports/judge_validation.json
+!reports/metrics_*.json
+!reports/scenarios.json
+# 메타평가 리포트 (README 링크, .md 제외 규칙의 예외)
+!reports/demo_summary.md
