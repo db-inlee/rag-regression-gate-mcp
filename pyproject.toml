@@ -18,6 +18,11 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+# MCP server is OPTIONAL: the gate core (app/regression/*) stays pydantic-only.
+# Install with `pip install ".[mcp]"`; fastmcp is imported only in app/mcp/server.py.
+mcp = [
+    "fastmcp>=2.14",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
