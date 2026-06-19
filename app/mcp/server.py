@@ -18,6 +18,7 @@ from pathlib import Path
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from app.mcp.suggest import build_suggestions
 from app.regression.detect import detect_paths
 from app.regression.gate import evaluate, exit_code, line
 
@@ -67,7 +68,7 @@ def build_gate_result(baseline_dir: str, candidate_dir: str) -> GateResult:
         regressions=[_delta(r) for r in gate["fails"]],
         warnings=[_delta(r) for r in gate["warns"]],
         diagnosis=diagnosis,
-        suggestions=[],  # M2
+        suggestions=build_suggestions(report, baseline_dir, candidate_dir),  # M2 (rule-based)
     )
 
 
