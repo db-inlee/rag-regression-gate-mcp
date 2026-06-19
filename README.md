@@ -126,10 +126,22 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 
 - **실패모드 진단**: "점수 하락"이 아니라 `retrieval_miss`/`hallucination`/`over_answer` 중 **무엇이 유의하게 회귀했는지** 귀인. retrieval_miss는 gold 근거 ↔ 검색 청크 매칭으로 **judge 없이 결정적** 판정.
 - **judge 신뢰성 검증**: 본문 채점 LLM(gpt-4o)을 gold로 검증 — 정답/오답 probe로 **judge_accuracy = 0.987**(혼동행렬 포함). 미묘 변형 probe까지 써서 거짓 고득점을 방지. → [`reports/judge_validation.json`](reports/judge_validation.json).
+- **채점 전략: judge는 선택적·검증 후 사용**: 숫자/표값은 단위 정규화(조·억) + **±0.1% 허용오차로 judge 없이 결정적**, 답없음은 거부 문구 매칭으로 결정적, retrieval_miss는 gold 근거 ⊆ 검색 청크로 결정적. **judge는 본문(서술형)에만** 쓰고 그조차 gold로 검증(0.933→0.987). 회귀 게이트는 *'같은 입력엔 같은 판정'* 이 생명이라 `temperature=0`+seed로 **노이즈밴드 std=0**을 달성했고, 비결정성의 표면적을 본문으로 좁혔다.
+- **RAGAS 대비**: RAGAS는 훌륭한 범용 RAG 평가 프레임워크다. 우리는 그걸 부정하는 게 아니라, *'CI 회귀 게이트'* 목적상 **결정성을 우선**했다 — *개념은 빌리되(groundedness 등) 측정은 가능한 한 결정적으로*. judge 한 번의 흔들림이 PASS/FAIL을 뒤집으면 게이트로 못 쓰기 때문. (설계 근거 전문: [`docs/JOURNEY.md` — 설계 결정](docs/JOURNEY.md))
 - **groundedness 분리**: 맞은 답도 **정답값이 검색 근거에 실재(grounded)** 하는지 확인. 암기/운으로 맞은 `unsupported_correct`는 헤드라인 정확도에서 분리(모델 암기력이 RAG 점수를 부풀리지 않게).
 - **no_answer 착시 방어**: answerable 정확도와 no_answer 정확도를 **항상 짝으로** 보고(전부 거부하는 시스템이 들통나도록).
 - **통계적 정직 + 거짓경보 0건**: 노이즈밴드 + 부트스트랩으로 "유의한 회귀만" FAIL. **같은 config 재실행은 항상 PASS**(거짓경보 0건)로 게이트 신뢰성 검증 — 데모용 임계 조작 없음.
 - **도메인 범용성 실증**: 두 도메인(DART 한국 금융 / 영어 위키 QA)에서 **같은 게이트 작동, 엔진 코드 0줄 변경**(`app/regression/*` git diff = 0). 단, 위키는 인터페이스 검증용 **미니 인스턴스**(20문항·쉬운 추출형)이고 **DART(100문항)가 메인 레퍼런스**다. → [`docs/portability.md` §5](docs/portability.md).
+
+## 정직한 경계 (적용 범위)
+
+과장하지 않기 위해 **못 하는 것**도 명시한다. 이 엔진은 **gold(평가셋)를 전제**로 한다 — 가진 gold에 따라 작동 범위가 갈린다:
+
+- **정답 + 근거 라벨**(DART) → accuracy · retrieval_miss · groundedness **전 기능**(gold 근거 ⊆ retrieved, 결정적).
+- **정답만**(근거 라벨 없음 — 더 흔함) → accuracy 작동, retrieval_miss는 *'정답 텍스트가 검색 청크에 있나'* 로 대체 가능(위키 `wiki_value_present`가 이 방식).
+- **정답조차 없음(reference-free)** → **범위 밖**. 정답 없이 옳고 그름을 판정하려면 judge 의존이 불가피해 우리의 *결정성* 원칙과 충돌한다.
+
+**왜 한계가 아니라 정의인가**: 회귀 감지는 본질적으로 **비교 기준**이 있어야 성립한다 — 고정 평가셋 없이 *'깨졌다'* 를 판단하는 건 원리적으로 불가능하다. 따라서 평가셋 전제는 '회귀 게이트'의 정의에 내재한 조건이다(promptfoo·RAGAS의 reference 기반 평가도 같은 전제). → 상세 [`docs/JOURNEY.md` — 설계 결정](docs/JOURNEY.md), [`docs/portability.md`](docs/portability.md).
 
 ---
 

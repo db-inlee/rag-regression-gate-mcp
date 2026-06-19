@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "rag-regression-gate": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "-m",
+        "app.mcp.server"
+      ],
+      "env": {}
+    }
+  }
+}

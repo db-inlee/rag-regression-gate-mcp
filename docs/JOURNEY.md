@@ -6,6 +6,39 @@
 
 ---
 
+## 설계 결정 — 채점 전략: judge를 *선택적으로*, 그리고 *검증해서* 쓴 이유
+
+우리는 judge(LLM 채점)를 **아예 안 쓴 게 아니라**, 슬라이스별로 **결정적 채점을 기본으로 두고 judge는 꼭 필요한 곳에만** 썼다. 그리고 그 judge조차 gold로 검증한 뒤에 신뢰했다.
+
+| 슬라이스 | 채점 방식 | judge | 근거(코드) |
+|---|---|---|---|
+| 숫자추론·표값 | **결정적** — 한국어 단위 정규화(조=1e12·억=1e8…) + **상대 허용오차 ±0.1%** | ✗ | `app/evaluator/scorer.py` (`_UNIT`, `tol = 0.001*abs(gold)`) |
+| 본문(서술형) | **judge 사용** — gold key-point 대비 LLM 판정 | ✓ (gold로 검증) | `app/evaluator/judge.py` + `validate_judge.py` |
+| 답없음(no_answer) | **결정적** — 거부 문구 매칭 | ✗ | `scorer.is_refusal` (`_REFUSAL`) |
+| retrieval_miss | **결정적** — gold 근거 ⊆ 검색 청크 집합 비교 | ✗ | `attribution.is_retrieval_miss` (`gold_retrieved`) |
+
+**이유 1 — 재현성(회귀 게이트의 생명):** 회귀 게이트는 *'같은 입력엔 같은 판정'* 이 전제다. judge 의존이 크면 비결정성이 들어와 거짓경보가 생긴다. 그래서 채점·생성 모두 `temperature=0`+seed 고정으로 돌렸고, 그 결과 **노이즈밴드 std=0**(5회 재실행 분산 0)을 달성했다. judge는 본문 슬라이스에만 국한해 비결정성의 표면적을 최소화했다.
+
+**이유 2 — judge도 검증 대상:** 본문 채점에 쓴 gpt-4o judge를 정답/오답 probe로 검증해 **judge_accuracy 0.987**(혼동행렬 포함)을 확인했다. 처음엔 무효 probe(맞는 내용을 덧붙인 변형)로 0.933까지 deflation 됐던 것을, neg_subtle을 '진짜 사실 어긋남'으로만 재구성해 **0.933 → 0.987**로 고쳤다. → [`reports/judge_validation.json`](../reports/judge_validation.json), 상세는 아래 Phase 2.
+
+**RAGAS 대비 — 부정이 아니라 목적의 차이:** RAGAS는 훌륭한 범용 RAG 평가 프레임워크다. 우리는 그것을 부정하는 게 아니라, *'CI에서 도는 회귀 게이트'* 라는 목적상 **결정성을 최우선**으로 뒀을 뿐이다. *개념은 빌리되(groundedness·answer correctness 등의 발상), 측정은 가능한 한 결정적으로* 한 것이 핵심 차이다 — judge 한 번의 흔들림이 PASS/FAIL을 뒤집으면 게이트로서 못 쓰기 때문. 실제로 judge를 본문 밖으로까지 넓게 쓰면 위에서 검증한 **'거짓경보 0건'**(같은 config 재실행 → 항상 PASS, Phase 3)이 원리적으로 불가능해진다.
+
+---
+
+## 설계 결정 — 정직한 경계: gold(평가셋)가 전제이고, reference-free는 범위 밖
+
+과장하지 않기 위해, 이 도구가 **무엇을 못 하는지**도 설계 근거로 적는다. 이 엔진은 *'평가셋(질문+정답)을 가진 RAG'* 에 범용이며, **gold가 전제**다. gold가 얼마나 갖춰졌느냐에 따라 작동 범위가 셋으로 갈린다:
+
+| 가진 gold | 작동 범위 | retrieval_miss / groundedness 처리 |
+|---|---|---|
+| **정답 + 근거 라벨** (우리 DART) | accuracy · retrieval_miss · groundedness **전 기능** | gold 근거 ⊆ retrieved 집합 비교(결정적) |
+| **정답만** (근거 라벨 없음 — 더 흔한 경우) | accuracy 작동 | retrieval_miss는 *'정답 텍스트가 검색 청크에 등장하나'* 로 대체 가능 — 실제로 위키 어댑터 `wiki_value_present`가 정답 문자열↔청크 매칭으로 이 방식을 쓴다 |
+| **정답조차 없음** (reference-free) | **범위 밖** | 정답 없이 옳고 그름을 판정하려면 judge 의존이 불가피 → 위에서 세운 *결정성* 원칙과 충돌하므로 다루지 않는다 |
+
+**핵심 논리:** 회귀 감지는 본질적으로 **'기준'** 이 있어야 성립한다. 고정된 비교 기준(평가셋) 없이 *'깨졌다'* 를 판단하는 것은 원리적으로 불가능하다. 그래서 **평가셋 전제는 이 도구의 한계라기보다 '회귀 게이트'라는 정의에 내재한 조건**이다. 테스트셋 기반 평가 도구(promptfoo 등)와 RAGAS의 reference 기반 메트릭도 같은 전제를 공유한다.
+
+---
+
 ## Phase 1 — 표추출 / 인덱싱
 
 | 검증으로 발견한 결함 | 근거 | 수정 |

@@ -1,0 +1,9 @@
+{
+    "mcpServers": {
+      "rag-regression-gate": {
+        "command": "python",
+        "args": ["-m", "app.mcp.server"],
+        "cwd": "/Users/lee/Desktop/toy/rag_regression"
+      }
+    }
+  }

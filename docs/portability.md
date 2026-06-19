@@ -161,3 +161,22 @@ $ git diff --numstat <DART-v1> HEAD -- app/regression/ app/evaluator/metrics.py 
 
 아직 "사용자 제공 플러그인"으로 추출만 한 건 도메인 어댑터(ScoringPlugin/GoldMatcher/EvalSetProvider/
 RAGAdapter)다 — DART/Wiki는 코드로 꽂혀 있고, 런타임 플러그인 주입(외부 도메인 등록)은 다음 단계.
+
+---
+
+## 6. 정직한 경계 — gold(평가셋) 전제와 reference-free 범위 밖
+
+§1~§5는 "엔진이 도메인을 모른다"는 범용성을 보였다. 그 범용성의 **정직한 한쪽 경계**도 함께 적는다:
+이 엔진은 *'평가셋(질문+정답)을 가진 RAG'* 에 범용이며 **gold가 전제**다. 가진 gold의 수준에 따라
+작동 범위가 셋으로 갈린다.
+
+| 가진 gold | 작동 범위 | retrieval_miss / value-presence |
+|---|---|---|
+| **정답 + 근거 라벨** (DART) | accuracy · retrieval_miss · groundedness **전 기능** | gold 근거 ⊆ retrieved 집합 비교 (`is_retrieval_miss`, 결정적) |
+| **정답만** (근거 라벨 없음 — 더 흔한 경우) | accuracy 작동, retrieval은 약한 프록시로 대체 | *'정답 텍스트가 검색 청크에 등장하나'* — 위키 `wiki_value_present`가 정답 문자열↔청크 매칭으로 이 방식(§4.2의 숫자형 value-presence와 같은 갈래) |
+| **정답조차 없음** (reference-free) | **범위 밖** | 정답 없이 옳고 그름을 판정하려면 judge 의존이 불가피 → 결정성 원칙(노이즈밴드 std=0, 거짓경보 0건)과 충돌하므로 다루지 않음 |
+
+**핵심 논리:** 회귀 감지는 본질적으로 **'기준'** 이 있어야 성립한다. 고정된 비교 기준(평가셋) 없이
+*'깨졌다'* 를 판단하는 것은 원리적으로 불가능하다. 따라서 **평가셋 전제는 이 도구의 한계가 아니라
+'회귀 게이트'라는 정의에 내재한 조건**이다 — 테스트셋 기반 평가 도구(promptfoo 등)와 RAGAS의
+reference 기반 메트릭도 같은 전제를 공유한다. (설계 결정 맥락: [`JOURNEY.md` — 설계 결정](JOURNEY.md))
