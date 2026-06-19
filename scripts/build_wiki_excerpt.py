@@ -22,11 +22,13 @@ import sys
 from pathlib import Path
 
 OUT = Path("data/wiki_eval/squad2_excerpt.jsonl")
+CORPUS_OUT = Path("data/wiki_eval/squad2_corpus.jsonl")
 N_DOCS = 10
 FACTOID_TARGET = 12
 NOANSWER_TARGET = 8
 MAX_GOLD_WORDS = 5          # keep factoid answers short
 CTX_MIN, CTX_MAX = 300, 900  # readable, clean-to-index paragraph length
+CORPUS_PARAS_PER_ARTICLE = 8  # gold paragraph + same-topic distractors (makes retrieval non-trivial)
 
 
 def qualifying_paragraph(art: dict):
@@ -83,6 +85,26 @@ def main(src: str) -> int:
 
     OUT.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
     print(f"docs={len(docs)}  factoid={fcount}  no_answer={ncount}  total={len(rows)} -> {OUT}")
+
+    # Corpus = gold paragraphs + same-topic distractors (other paragraphs of the same
+    # articles). The eval set stays 10 gold paragraphs; the corpus is larger and
+    # genuinely confusable, so weak retrieval grabs the wrong paragraph (doc_id miss).
+    by_title = {art["title"]: art for art in data}
+    gold_ids = {d[0] for d in docs}
+    corpus, seen = [], set()
+    for doc_id, title, *_ in docs:
+        art = by_title[title]
+        idxs = sorted(range(len(art["paragraphs"])),
+                      key=lambda i: (f"{title}#p{i}" not in gold_ids, i))[:CORPUS_PARAS_PER_ARTICLE]
+        for i in sorted(idxs):
+            cid = f"{title}#p{i}"
+            if cid not in seen:
+                seen.add(cid)
+                corpus.append({"doc_id": cid, "title": title, "context": art["paragraphs"][i]["context"]})
+    CORPUS_OUT.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in corpus) + "\n", encoding="utf-8")
+    missing = gold_ids - seen
+    print(f"corpus={len(corpus)} paragraphs ({len(gold_ids)} gold + distractors) -> {CORPUS_OUT}"
+          f"{'  MISSING gold:' + str(missing) if missing else ''}")
     return 0
 
 

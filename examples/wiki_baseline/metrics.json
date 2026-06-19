@@ -1,15 +1,15 @@
 {
-  "run_id": "wiki_20260620_052136_1801e7178f61",
-  "answerable_accuracy": 1.0,
+  "run_id": "wiki_noise_1801e7178f61_r1",
+  "answerable_accuracy": 0.9167,
   "answerable_total": 12,
-  "grounded_correct": 12,
+  "grounded_correct": 11,
   "unsupported_correct": 0,
-  "no_answer_accuracy": 0.5,
-  "over_answer_rate": 0.5,
+  "no_answer_accuracy": 0.875,
+  "over_answer_rate": 0.125,
   "retrieval_success_strict": 1.0,
   "retrieval_miss_count": 0,
   "failure_distribution": {
-    "correct": 16,
-    "hallucination": 4
+    "correct": 18,
+    "hallucination": 2
   }
 }

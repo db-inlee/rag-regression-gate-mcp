@@ -1,0 +1,77 @@
+{
+  "n_runs": 3,
+  "domain": "wiki",
+  "config": {
+    "chunk_size": 400,
+    "chunk_overlap": 50,
+    "top_k": 5,
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "generation_model": "gpt-4o-mini",
+    "judge_model": "gpt-4o",
+    "reranker_enabled": false,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_fetch_k": 20,
+    "vectorstore": "chroma",
+    "persist_dir": "data/wiki_index",
+    "collection_base": "wiki",
+    "seed": 0,
+    "index_signature": "1801e7178f61",
+    "collection_name": "wiki_1801e7178f61"
+  },
+  "run_ids": [
+    "wiki_noise_1801e7178f61_r1",
+    "wiki_noise_1801e7178f61_r2",
+    "wiki_noise_1801e7178f61_r3"
+  ],
+  "metric_band": {
+    "answerable_accuracy": {
+      "mean": 0.9167,
+      "std": 0.0,
+      "min": 0.9166666666666666,
+      "max": 0.9166666666666666,
+      "n": 3
+    },
+    "retrieval_success_strict": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3
+    },
+    "retrieval_success_value_present": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3
+    },
+    "no_answer_accuracy": {
+      "mean": 0.875,
+      "std": 0.0,
+      "min": 0.875,
+      "max": 0.875,
+      "n": 3
+    },
+    "over_answer_rate": {
+      "mean": 0.125,
+      "std": 0.0,
+      "min": 0.125,
+      "max": 0.125,
+      "n": 3
+    },
+    "mode:retrieval_miss": {
+      "mean": 0,
+      "std": 0.0,
+      "min": 0,
+      "max": 0,
+      "n": 3
+    },
+    "mode:hallucination": {
+      "mean": 2,
+      "std": 0.0,
+      "min": 2,
+      "max": 2,
+      "n": 3
+    }
+  }
+}

@@ -20,6 +20,7 @@ from app.interfaces import RunLogEntry, ScoreResult, check_whitelist
 from app.schemas import EvalCase
 
 EXCERPT_PATH = Path("data/wiki_eval/squad2_excerpt.jsonl")
+CORPUS_PATH = Path("data/wiki_eval/squad2_corpus.jsonl")  # gold + same-topic distractors
 
 # Wiki config: SAME engine/config model as DART, only the swap-fields differ.
 # A different embedding (MiniLM, English) + collection_base/persist_dir isolate the
@@ -28,7 +29,7 @@ WIKI_CONFIG = RagConfig(
     embedding_model="sentence-transformers/all-MiniLM-L6-v2",  # ≠ DART bge-m3
     chunk_size=400,
     chunk_overlap=50,
-    top_k=3,
+    top_k=5,            # corpus has same-topic distractors → need k≥4 for clean retrieval
     collection_base="wiki",
     persist_dir="data/wiki_index",
 )
@@ -175,9 +176,12 @@ _SYSTEM_EN = (
 )
 
 
-def _unique_docs(provider: WikiEvalSetProvider | None = None) -> list[dict]:
-    """Distinct (doc_id, title, context) paragraphs to index as the wiki corpus."""
-    path = (provider or WikiEvalSetProvider()).path
+def _unique_docs() -> list[dict]:
+    """Distinct (doc_id, title, context) paragraphs to index as the wiki corpus.
+
+    Prefer the larger corpus file (gold + same-topic distractors) so retrieval is
+    non-trivial; fall back to the excerpt's 10 gold paragraphs if it's absent."""
+    path = CORPUS_PATH if CORPUS_PATH.exists() else EXCERPT_PATH
     seen, docs = set(), []
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -274,3 +278,84 @@ class WikiRAGAdapter:
             "token_usage": {"prompt_tokens": u.prompt_tokens,
                             "completion_tokens": u.completion_tokens, "total_tokens": u.total_tokens},
         }
+
+
+# --------------------------------------------------------------------------- #
+# Orchestration glue (wiki-specific; reuses the SHARED attribution/gate engine)
+# --------------------------------------------------------------------------- #
+
+def evaluate_wiki(config: RagConfig = WIKI_CONFIG, client=None, cases: dict | None = None):
+    """One full wiki eval pass: RAG run → score → (judge ambiguous factoid) →
+    attribute → gate_fields. Returns (cases, records, attrs).
+
+    The attribution / gate_fields calls are the SAME engine functions DART uses —
+    only the WikiGoldMatcher + wiki_value_present hooks are injected.
+    """
+    from openai import OpenAI
+
+    from app.env import require_openai_key
+    from app.evaluator.attribution import attribute
+    from app.evaluator.case_eval import gate_fields
+    from app.evaluator.judge import judge_body_text
+
+    if cases is None:
+        cases = {c.model_dump()["id"]: c.model_dump() for c in WikiEvalSetProvider().load()}
+    if client is None:
+        require_openai_key()
+        client = OpenAI()
+
+    adapter = WikiRAGAdapter(config)
+    scorer, matcher = WikiScoringPlugin(), WikiGoldMatcher()
+    records, attrs = [], []
+    for cid, case in cases.items():
+        entry = adapter.run(case["question"])
+        records.append({"type": "case", "id": cid, "slice": case["slice"], **entry})
+
+        scored = scorer.score(entry["answer"], case["expected_answer"], case)
+        correct = scored["correct"]
+        if correct is None:  # ambiguous factoid → judge (reuse DART judge on key_points)
+            v = judge_body_text(case["question"], case["expected_answer"]["key_points"],
+                                entry["answer"], config, client)
+            correct = v["correct"]
+            scored["score_detail"]["judge_reason"] = v["reason"]
+
+        a = attribute(case, correct, scored, entry, config, client=client, matcher=matcher)
+        a.update(gate_fields(case, entry, a["primary_failure"],
+                             matcher=matcher, value_present=wiki_value_present))
+        attrs.append(a)
+    return cases, records, attrs
+
+
+def wiki_metrics(attrs: list[dict]) -> dict:
+    """Headline metrics from the portable gate_fields (same DEFINITIONS as DART)."""
+    ans = [g for g in attrs if g["answerable"]]
+    na = [g for g in attrs if not g["answerable"]]
+    grounded = [g for g in ans if g["correct"] and g["value_present"]]
+    from collections import Counter
+    return {
+        "answerable_accuracy": round(len(grounded) / len(ans), 4) if ans else None,
+        "answerable_total": len(ans),
+        "grounded_correct": len(grounded),
+        "unsupported_correct": sum(1 for g in ans if g["correct"] and not g["value_present"]),
+        "no_answer_accuracy": round(sum(g["correct"] for g in na) / len(na), 4) if na else None,
+        "over_answer_rate": round(sum(g["over_answer"] for g in na) / len(na), 4) if na else None,
+        "retrieval_success_strict": round(sum(g["retrieval_strict_ok"] for g in ans) / len(ans), 4) if ans else None,
+        "retrieval_miss_count": sum(1 for g in attrs if g["primary_failure"] == "retrieval_miss"),
+        "failure_distribution": dict(Counter(g["primary_failure"] for g in attrs)),
+    }
+
+
+def wiki_band_vector(attrs: list[dict]) -> dict:
+    """Per-run metric vector for noise-band measurement (keys = detect noise_keys)."""
+    ans = [g for g in attrs if g["answerable"]]
+    na = [g for g in attrs if not g["answerable"]]
+    rate = lambda sub, f: (sum(f(g) for g in sub) / len(sub)) if sub else 0.0
+    return {
+        "answerable_accuracy": rate(ans, lambda g: g["correct"] and g["value_present"]),
+        "retrieval_success_strict": rate(ans, lambda g: g["retrieval_strict_ok"]),
+        "retrieval_success_value_present": rate(ans, lambda g: g["value_present"]),
+        "no_answer_accuracy": rate(na, lambda g: g["correct"]),
+        "over_answer_rate": rate(na, lambda g: g["over_answer"]),
+        "mode:retrieval_miss": sum(g["primary_failure"] == "retrieval_miss" for g in attrs),
+        "mode:hallucination": sum(g["primary_failure"] == "hallucination" for g in attrs),
+    }
