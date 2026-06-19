@@ -35,3 +35,4 @@ reports/attribution_*.jsonl
 !reports/demo_summary.md
 build/
 *.egg-info/
+.cursor/
