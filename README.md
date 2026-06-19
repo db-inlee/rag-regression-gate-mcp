@@ -2,7 +2,7 @@
 
 _MCP 서버로 제공하는 RAG 파이프라인 회귀 진단 게이트 — 점수 하락이 아니라 어떤 실패모드가 회귀했는지 진단._
 
-> ℹ️ **현재 v1은 DART 레퍼런스 구현이며, MCP 서버화는 범용화 단계에서 추가 예정**(아직 미구현). 인터페이스 설계는 [`docs/portability.md`](docs/portability.md) 참조.
+> ℹ️ **MCP 서버 제공**(`run_gate` 도구 + 룰 기반 제안 엔진) — 아래 "MCP 서버" 섹션. **범용화 완료: 2개 도메인 실증**(DART 한국 금융 100문항 + 영어 위키 SQuAD 2.0 20문항, 엔진 코드 0줄 변경). 인터페이스/경계 설계는 [`docs/portability.md`](docs/portability.md) 참조.
 
 > **이건 "RAG 성능"을 높이는 프로젝트가 아니라, RAG 변경의 "품질 회귀"를 CI/PR에서 자동으로
 > 잡는 감시 게이트 프로젝트다.** baseline의 answerable 정확도 20%는 *측정 대상*일 뿐이고, 핵심은
@@ -43,6 +43,49 @@ CI에서는 이 `exit 1`이 머지를 막는다(GitHub branch protection의 Requ
 > 포함하지 않는다. **full RAG(인덱싱~생성)**를 재현하려면 [DART](https://dart.fss.or.kr)에서 해당
 > 보고서 PDF를 받아 `data/corpus/raw/`에 두고 `python scripts/extract_tables.py`를 실행하면 된다.
 > 단, **헤드라인인 게이트 데모(PASS/FAIL)는 코퍼스 없이 `examples/`만으로 재현된다**(위 30초 데모).
+
+---
+
+## MCP 서버 — Claude/Cursor에서 "두 실행 비교해줘"
+
+같은 게이트를 **MCP 도구**로 노출한다. Claude Desktop/Cursor 같은 클라이언트가
+`run_gate`를 호출해 **판정 + 실패모드 진단 + 룰 기반 제안**을 받는다.
+
+```bash
+pip install ".[mcp]"        # fastmcp는 옵션 extra (게이트 코어는 여전히 pydantic만)
+python -m app.mcp.server    # stdio MCP 서버 실행
+```
+
+Claude Desktop / Cursor의 `mcpServers` 설정에 등록:
+
+```json
+{
+  "mcpServers": {
+    "rag-regression-gate": {
+      "command": "python",
+      "args": ["-m", "app.mcp.server"],
+      "cwd": "/absolute/path/to/rag_regression"
+    }
+  }
+}
+```
+
+**사용 시나리오**: Claude에게 *"이 두 RAG 실행 비교해줘"*(baseline/candidate 디렉토리 경로) →
+`run_gate(baseline_dir, candidate_dir)` 호출 → **PASS/WARN/FAIL + 부트스트랩 CI + 실패모드 진단 + 제안**
+(`GateResult`)을 돌려준다. 입력은 단순 경로 문자열(게이트 CLI와 동일 계약), 출력은 구조화된 Pydantic.
+
+```
+run_gate("examples/baseline", "examples/demo_regression")
+ → verdict=FAIL, exit_code=1
+   regressions: retrieval_miss 65→73 (CI [+2,+14]), 정답정확도 0.20→0.08
+   suggestions: "[retrieval_miss] 검색 단계 회귀 … 원인 후보: top_k 5→1 → 우선 되돌림(top_k 1→5) 검토 …"
+```
+
+> **제안은 "검토 후보"지 "정답"이 아니다.** LLM이 생성하지 않고 **룰 기반 카탈로그**
+> ([`docs/remediation_catalog.md`](docs/remediation_catalog.md): 실패모드→단계→기법 + config diff 역추적)로
+> 결정적으로 만든다. **suggestion-only** — 게이트는 config를 자동 수정/실행하지 않으며, 모든 제안에
+> "사람이 적용 후 이 게이트로 재검증" 문구가 붙는다. MCP 계층은 통계 로직을 한 줄도 재구현하지 않고
+> 기존 엔진(`detect`→`gate`)을 **호출만** 한다 → CLI와 수치 동일.
 
 ---
 
@@ -106,11 +149,14 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 ```
 app/rag/        수집·표추출·청킹·인덱싱·pipeline (DART/RAG)
 app/evaluator/  scorer · judge · validate_judge · attribution · metrics · case_eval
-app/regression/ detect(부트스트랩) · gate(PASS/WARN/FAIL)   ← 도메인 무관 엔진
-scripts/        run_eval · run_attribution · measure_noise · run_scenario · run_gate · demo_table · generate_candidate
-examples/       baseline / candidate / demo_neutral / demo_regression  (게이트 입력 데모)
-reports/        원본 산출물(메트릭·노이즈밴드·judge검증·시나리오·실행로그)   gate_runs/ 는 게이트 부산물
-docs/portability.md   범용 엔진 vs DART 전용 분리 + MCP 인터페이스 설계
+app/regression/ detect(부트스트랩) · gate(PASS/WARN/FAIL)   ← 도메인 무관 엔진(2개 도메인 공유)
+app/interfaces.py  플러그인 Protocol 4종(+화이트리스트)   app/adapters/  dart · wiki 구현체
+app/mcp/        server(run_gate 도구, fastmcp) · suggest(룰 기반 제안 엔진)   ← MCP, 옵션 extra
+scripts/        run_eval · run_attribution · measure_noise · run_scenario · run_gate · run_wiki_gate_demo
+examples/       baseline / demo_neutral / demo_regression / wiki_baseline / wiki_candidate  (게이트 입력 데모)
+data/wiki_eval/ SQuAD 2.0 발췌(20문항) + 코퍼스 + 라이선스(CC BY-SA 4.0)
+reports/        원본 산출물(메트릭·노이즈밴드·judge검증·시나리오)   gate_runs/ 는 게이트 부산물
+docs/           portability(엔진 vs 도메인 경계 + 2도메인 실증) · interfaces(플러그인 설계) · remediation_catalog(제안 근거)
 ```
 
 표추출의 알려진 한계는 [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md). (빌드 티켓·불변 규칙·기획 등 내부 작업 문서는 공개 범위에서 제외.)

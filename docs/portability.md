@@ -148,3 +148,16 @@ $ git diff --numstat <DART-v1> HEAD -- app/regression/ app/evaluator/metrics.py 
 > 재현: `python scripts/run_wiki_gate_demo.py` (baseline 노이즈밴드 + top_k 5→1 candidate +
 > 게이트). 결과: 위키 `retrieval_miss` 0→3을 judge 없이 검출, 게이트 WARN(20문항 소표본에서
 > 부트스트랩 CI가 0에 닿아 보수적으로 FAIL이 아닌 WARN — DART와 동일한 결합규칙).
+
+### 5.1 MCP 제품화 (Realized)
+
+§1~§4에서 "MCP 인터페이스 후보"로 적은 것 중 **게이트 코어가 실제 MCP 도구로 구현됐다**
+(`app/mcp/server.py`, 의존성은 옵션 extra `[mcp]`):
+
+- `run_gate(baseline_dir, candidate_dir) -> GateResult` — 기존 엔진(`detect_paths`→`evaluate`→
+  `exit_code`)을 **호출만** 하는 얇은 래퍼. 통계 0줄 재구현, 출력 수치는 CLI와 동일.
+- 제안 엔진(`app/mcp/suggest.py`)은 **룰 기반·결정적**: 실패모드→단계→기법 + config diff 역추적
+  ([`remediation_catalog.md`](remediation_catalog.md)). LLM 미사용, suggestion-only(자동 적용 없음).
+
+아직 "사용자 제공 플러그인"으로 추출만 한 건 도메인 어댑터(ScoringPlugin/GoldMatcher/EvalSetProvider/
+RAGAdapter)다 — DART/Wiki는 코드로 꽂혀 있고, 런타임 플러그인 주입(외부 도메인 등록)은 다음 단계.
