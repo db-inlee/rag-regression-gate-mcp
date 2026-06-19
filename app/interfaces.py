@@ -61,6 +61,23 @@ class EvalSetProvider(Protocol):
     def load(self) -> list[EvalCase]: ...
 
 
+def check_whitelist(cases: list[EvalCase], allowed_slices: set[str], allowed_schemas: set[str]) -> None:
+    """Runtime type-safety net for the relaxed (str) Slice/AnswerSchema.
+
+    Since EvalCase no longer constrains slice/answer_schema to a Literal, each
+    EvalSetProvider validates its cases against its own whitelist — so a typo
+    (e.g. answer_schema="texr") or a wrong slice is caught here, not silently passed.
+    """
+    bad = [(c.id, c.slice, c.answer_schema) for c in cases
+           if c.slice not in allowed_slices or c.answer_schema not in allowed_schemas]
+    if bad:
+        raise ValueError(
+            f"{len(bad)} eval case(s) outside domain whitelist (id, slice, answer_schema): "
+            f"{bad[:5]} | allowed_slices={sorted(allowed_slices)} "
+            f"allowed_schemas={sorted(allowed_schemas)}"
+        )
+
+
 @runtime_checkable
 class RAGAdapter(Protocol):
     def run(self, question: str) -> RunLogEntry: ...

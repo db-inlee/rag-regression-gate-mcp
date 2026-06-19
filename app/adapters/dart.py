@@ -12,7 +12,7 @@ from pathlib import Path
 
 from app.config import DEFAULT_CONFIG, RagConfig
 from app.evaluator import attribution, scorer
-from app.interfaces import RunLogEntry, ScoreResult
+from app.interfaces import RunLogEntry, ScoreResult, check_whitelist
 from app.schemas import EvalCase
 
 
@@ -43,12 +43,17 @@ class DartGoldMatcher:
 class DartEvalSetProvider:
     """→ data/eval_cases.jsonl (고정 평가셋 로딩)."""
 
+    ALLOWED_SLICES = {"table_value", "numeric_reasoning", "body_text", "no_answer"}
+    ALLOWED_SCHEMAS = {"numeric", "comparison", "text", "no_answer"}
+
     def __init__(self, path: str | Path = "data/eval_cases.jsonl"):
         self.path = Path(path)
 
     def load(self) -> list[EvalCase]:
-        return [EvalCase.model_validate(json.loads(line))
-                for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        cases = [EvalCase.model_validate(json.loads(line))
+                 for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        check_whitelist(cases, self.ALLOWED_SLICES, self.ALLOWED_SCHEMAS)  # type-safety net
+        return cases
 
 
 class DartRAGAdapter:

@@ -26,9 +26,12 @@ class FailureType(StrEnum):
     FORMAT_VIOLATION = "format_violation"
 
 
-AnswerType = Literal["answerable", "unanswerable"]
-Slice = Literal["table_value", "numeric_reasoning", "body_text", "no_answer"]
-AnswerSchema = Literal["numeric", "comparison", "text", "no_answer"]
+AnswerType = Literal["answerable", "unanswerable"]   # binary, domain-agnostic
+# Relaxed to str for multi-domain (interfaces §0). Type safety is enforced at
+# RUNTIME by each EvalSetProvider's whitelist (allowed_slices / allowed_schemas) —
+# so a typo like "texr" is caught there, not silently accepted.
+Slice = str
+AnswerSchema = str
 
 
 # --------------------------------------------------------------------------- #
@@ -104,16 +107,18 @@ class EvalCase(BaseModel):
     expected_answer: ExpectedAnswer
     answer_type: AnswerType
     slice: Slice
-    gold_failure_type: FailureType
+    gold_failure_type: str  # taxonomy value; FailureType enum lists DART/engine modes
     source_ref: str  # file / table-id / cell, or paragraph the answer came from
     needs_review: bool = False
 
     @model_validator(mode="after")
     def _expected_answer_matches_schema(self) -> "EvalCase":
-        expected_type = _SCHEMA_TO_ANSWER[self.answer_schema]
-        if not isinstance(self.expected_answer, expected_type):
+        expected_type = _SCHEMA_TO_ANSWER.get(self.answer_schema)
+        if expected_type and not isinstance(self.expected_answer, expected_type):
             raise ValueError(
                 f"answer_schema={self.answer_schema!r} requires "
                 f"{expected_type.__name__}, got {type(self.expected_answer).__name__}"
             )
+        # Unknown (domain) schema: expected_answer is still constrained by the
+        # ExpectedAnswer Union; slice/answer_schema validity is the provider whitelist's job.
         return self
