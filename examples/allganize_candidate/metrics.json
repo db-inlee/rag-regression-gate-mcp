@@ -1,0 +1,16 @@
+{
+  "run_id": "allganize_cand_topk1_1a13b95a9b06",
+  "answerable_accuracy": 0.3,
+  "answerable_total": 40,
+  "grounded_correct": 12,
+  "unsupported_correct": 0,
+  "no_answer_accuracy": null,
+  "over_answer_rate": null,
+  "retrieval_success_strict": 0.875,
+  "retrieval_miss_count": 5,
+  "failure_distribution": {
+    "correct": 12,
+    "hallucination": 23,
+    "retrieval_miss": 5
+  }
+}

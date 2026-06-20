@@ -1,0 +1,22 @@
+{
+  "run_id": "allganize_noise_1a13b95a9b06_r1",
+  "domain": "allganize",
+  "config": {
+    "chunk_size": 1000,
+    "chunk_overlap": 150,
+    "top_k": 5,
+    "embedding_model": "BAAI/bge-m3",
+    "generation_model": "gpt-4o-mini",
+    "judge_model": "gpt-4o",
+    "reranker_enabled": false,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_fetch_k": 20,
+    "vectorstore": "chroma",
+    "persist_dir": "data/allganize_index",
+    "collection_base": "allganize",
+    "seed": 0,
+    "index_signature": "1a13b95a9b06",
+    "collection_name": "allganize_1a13b95a9b06"
+  },
+  "n_cases": 40
+}
