@@ -1,20 +1,16 @@
 # RAG Regression Gate (MCP)
 
-_MCP 서버로 제공하는 RAG 파이프라인 회귀 진단 게이트 — 점수 하락이 아니라 어떤 실패모드가 회귀했는지 진단._
+**RAG 운영자를 위한 진단 도구 — "무엇이 회귀했나"와 "지금 뭘 고쳐야 하나"를 둘 다 답한다.**
+RAG 파이프라인을 바꿨을 때 품질이 회귀했는지 어떤 실패모드 때문인지 CI/PR에서 자동으로 잡고(`run_gate`),
+성능을 올려야 할 때 어디가 병목이고 뭘 먼저 손볼지 진단한다(`analyze_failures`). 단순 "점수 하락"이
+아니라 실패모드(retrieval_miss·hallucination 등)를 본다. (baseline의 answerable 정확도 20%는 *측정 대상*일 뿐.)
 
-> ℹ️ **MCP 서버 제공**(`run_gate` + `analyze_failures` 도구 + 룰 기반 제안 엔진) — 아래 "MCP 서버" 섹션. **범용화 완료: 3개 도메인 실증**(DART 한국 금융 100문항 + 영어 위키 SQuAD 2.0 20문항 + **Allganize 한국 법률·공공 40문항(외부 공개 gold)**, 엔진 코드 0줄 변경). 인터페이스/경계 설계는 [`docs/portability.md`](docs/portability.md) 참조.
-
-> **이건 "RAG 성능"을 높이는 프로젝트가 아니라, RAG 변경의 "품질 회귀"를 CI/PR에서 자동으로
-> 잡는 감시 게이트 프로젝트다.** baseline의 answerable 정확도 20%는 *측정 대상*일 뿐이고, 핵심은
-> **게이트가 회귀를 분별 있게 판정**하는 것 — **진짜 회귀는 FAIL로 막고, 헛개선·중립 변경은 통과**시킨다.
-> 한 걸음 더: 단순 "점수 하락"이 아니라 **"어떤 실패모드가 유의하게 회귀했는지"**(retrieval_miss·hallucination 등)를 진단한다.
+- **두 도구, 한 사이클** — `run_gate`(회귀 감지) + `analyze_failures`(개선 진단)가 운영 사이클에서 맞물린다 (아래 "MCP 서버" 섹션).
+- **통계적 정직** — 부트스트랩 CI + 노이즈 밴드로 "유의한 회귀만" 판정, 거짓경보 0건(같은 config 재실행은 항상 PASS).
+- **3개 도메인 실증** — DART 한국 금융 100 + 영어 위키 20 + Allganize 한국 법률·공공 40문항(외부 공개 gold), 엔진 코드 0줄 변경. → [`docs/portability.md`](docs/portability.md).
 
 도메인은 **DART 전자공시(한국 금융 사업보고서)**의 표·텍스트 QA — 어렵고 오염 없는 실제 코퍼스. 하지만
 DART는 **레퍼런스 인스턴스**일 뿐, 회귀 판정 엔진 자체는 도메인 무관이다(아래 "범용성" 참조).
-
-> **작은 평가셋(100)의 노이즈를 정면으로 다룬다**: 같은 config를 **5회 반복한 노이즈 밴드 + 부트스트랩
-> 신뢰구간**으로 "유의한 회귀만" 판정하고, **거짓경보 0건**(같은 config 재실행은 항상 PASS)으로 게이트
-> 신뢰성을 검증했다. 작은 표본이라 못 믿는 게 아니라, 작은 표본이라서 더 정직하게 통계로 다룬다.
 
 ---
 
@@ -162,10 +158,10 @@ LLM judge 호출이 없어 **같은 입력엔 같은 값**(재현 가능):
 |---|---|---|---|---|
 | (baseline) | 0.20 | 65 | — | — |
 | **A. top_k 5→1** | 0.20→0.08 | 65→73 | 🔴 **FAIL** | **검색 회귀** |
-| **B. reranker off→on** | 0.20→0.19 | 65→60 | 🟡 WARN | **개선 아님(헛개선)** |
+| **B. reranker off→on** | 0.20→0.19 | 65→60 | 🟡 WARN | **개선 효과 없음** |
 | **C. overlap 150→155** | 0.20→0.19 | 65→66 | 🟡 WARN | 중립(경계) |
 
-- **A 진짜 회귀 → 잡음.** **B "좋아질 줄 알았던" reranker → 데이터상 유의한 개선 없음(WARN), 게이트가 헛개선을 인정 안 함** — 이게 회귀 게이트의 존재 이유. **C 중립 → FAIL 회피.**
+- **A 진짜 회귀 → 잡음.** **B "좋아질 줄 알았던" reranker → 데이터상 유의한 개선 없음(WARN), 게이트가 유의한 개선이 아님을 정확히 판정** — 이게 회귀 게이트의 존재 이유. **C 중립 → FAIL 회피.**
 - 위 표가 핵심이며 CI·유의성은 게이트가 그대로 출력. 전체 분석: [`reports/demo_summary.md`](reports/demo_summary.md).
 
 ---
@@ -189,14 +185,14 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 
 ## 차별점
 
-- **실패모드 진단**: "점수 하락"이 아니라 `retrieval_miss`/`hallucination`/`over_answer` 중 **무엇이 유의하게 회귀했는지** 귀인. retrieval_miss는 gold 근거 ↔ 검색 청크 매칭으로 **judge 없이 결정적** 판정.
-- **judge 신뢰성 검증**: 본문 채점 LLM(gpt-4o)을 gold로 검증 — 정답/오답 probe로 **judge_accuracy = 0.987**(혼동행렬 포함). 미묘 변형 probe까지 써서 거짓 고득점을 방지. → [`reports/judge_validation.json`](reports/judge_validation.json).
-- **채점 전략: judge는 선택적·검증 후 사용**: 숫자/표값은 단위 정규화(조·억) + **±0.1% 허용오차로 judge 없이 결정적**, 답없음은 거부 문구 매칭으로 결정적, retrieval_miss는 gold 근거 ⊆ 검색 청크로 결정적. **judge는 본문(서술형)에만** 쓰고 그조차 gold로 검증(0.933→0.987). 회귀 게이트는 *'같은 입력엔 같은 판정'* 이 생명이라 `temperature=0`+seed로 **노이즈밴드 std=0**을 달성했고, 비결정성의 표면적을 본문으로 좁혔다.
-- **RAGAS 대비**: RAGAS는 훌륭한 범용 RAG 평가 프레임워크다. 우리는 그걸 부정하는 게 아니라, *'CI 회귀 게이트'* 목적상 **결정성을 우선**했다 — *개념은 빌리되(groundedness 등) 측정은 가능한 한 결정적으로*. judge 한 번의 흔들림이 PASS/FAIL을 뒤집으면 게이트로 못 쓰기 때문. (설계 근거 전문: [`docs/JOURNEY.md` — 설계 결정](docs/JOURNEY.md))
-- **groundedness 분리**: 맞은 답도 **정답값이 검색 근거에 실재(grounded)** 하는지 확인. 암기/운으로 맞은 `unsupported_correct`는 헤드라인 정확도에서 분리(모델 암기력이 RAG 점수를 부풀리지 않게).
-- **no_answer 착시 방어**: answerable 정확도와 no_answer 정확도를 **항상 짝으로** 보고(전부 거부하는 시스템이 들통나도록).
-- **통계적 정직 + 거짓경보 0건**: 노이즈밴드 + 부트스트랩으로 "유의한 회귀만" FAIL. **같은 config 재실행은 항상 PASS**(거짓경보 0건)로 게이트 신뢰성 검증 — 데모용 임계 조작 없음.
-- **도메인 범용성 실증(3도메인)**: DART(한국 금융) / 영어 위키 QA / **Allganize(한국 법률·공공, 외부 공개 gold)** 에서 **같은 게이트 작동, 엔진 코드 0줄 변경**(git diff = 0). ★ Allganize는 **우리가 만들지 않은 남의 gold**이고 병목이 **DART와 정반대(검색 vs 생성/그라운딩)** — 같은 `analyze_failures`가 DART엔 top_k↑, Allganize엔 citation을 처방한다(더 강한 범용성 증거). 단 위키·Allganize는 인터페이스 검증용 **미니 인스턴스**(20·40문항)이고 **DART(100문항)가 메인 레퍼런스**다. Allganize는 문서 단위 매칭이라 DART보다 거칠고 스캔 이미지 문서는 제외. 출처: datalama/RAG-Evaluation-Dataset-KO(MIT). → [`docs/portability.md` §5](docs/portability.md).
+- **실패모드 진단**: "점수 하락"이 아니라 `retrieval_miss`/`hallucination`/`over_answer` 중 무엇이 유의하게 회귀했는지 귀인. retrieval_miss는 gold 근거 ↔ 검색 청크 매칭으로 judge 없이 결정적 판정.
+- **judge 신뢰성 검증**: 본문 채점 LLM(gpt-4o)을 gold로 검증 — 정답/오답 probe로 judge_accuracy = 0.987(혼동행렬 포함). 미묘 변형 probe까지 써서 거짓 고득점을 방지. → [`reports/judge_validation.json`](reports/judge_validation.json).
+- **채점 전략: judge는 선택적·검증 후 사용**: 숫자/표값은 단위 정규화(조·억) + ±0.1% 허용오차로 judge 없이 결정적, 답없음은 거부 문구 매칭으로 결정적, retrieval_miss는 gold 근거 ⊆ 검색 청크로 결정적. judge는 본문(서술형)에만 쓰고 그조차 gold로 검증(0.933→0.987). 회귀 게이트는 *'같은 입력엔 같은 판정'* 이 생명이라 `temperature=0`+seed로 노이즈밴드 std=0을 달성했고, 비결정성의 표면적을 본문으로 좁혔다.
+- **RAGAS 대비**: RAGAS는 훌륭한 범용 RAG 평가 프레임워크다. 우리는 그걸 부정하는 게 아니라, *'CI 회귀 게이트'* 목적상 결정성을 우선했다 — *개념은 빌리되(groundedness 등) 측정은 가능한 한 결정적으로*. judge 한 번의 흔들림이 PASS/FAIL을 뒤집으면 게이트로 못 쓰기 때문. (설계 근거 전문: [`docs/JOURNEY.md` — 설계 결정](docs/JOURNEY.md))
+- **groundedness 분리**: 맞은 답도 정답값이 검색 근거에 실재(grounded)하는지 확인. 암기/운으로 맞은 `unsupported_correct`는 헤드라인 정확도에서 분리(모델 암기력이 RAG 점수를 부풀리지 않게).
+- **no_answer 착시 방어**: answerable 정확도와 no_answer 정확도를 항상 짝으로 보고(전부 거부하는 시스템이 들통나도록).
+- **통계적 정직 + 거짓경보 0건**: 노이즈밴드 + 부트스트랩으로 "유의한 회귀만" FAIL. 같은 config 재실행은 항상 PASS(거짓경보 0건)로 게이트 신뢰성 검증 — 데모용 임계 조작 없음.
+- **도메인 범용성 실증(3도메인)**: DART(한국 금융) / 영어 위키 QA / Allganize(한국 법률·공공, 외부 공개 gold)에서 같은 게이트 작동, 엔진 코드 0줄 변경(git diff = 0). ★ Allganize는 우리가 만들지 않은 남의 gold이고 병목이 DART와 정반대(검색 vs 생성/그라운딩) — 같은 `analyze_failures`가 DART엔 top_k↑, Allganize엔 citation을 처방한다(더 강한 범용성 증거). 단 위키·Allganize는 인터페이스 검증용 미니 인스턴스(20·40문항)이고 DART(100문항)가 메인 레퍼런스다. Allganize는 문서 단위 매칭이라 DART보다 거칠고 스캔 이미지 문서는 제외. 출처: datalama/RAG-Evaluation-Dataset-KO(MIT). → [`docs/portability.md` §5](docs/portability.md).
 
 ## 정직한 경계 (적용 범위)
 
