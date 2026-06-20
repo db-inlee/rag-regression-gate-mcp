@@ -184,11 +184,34 @@ abstain 유도**를 권한다 — 도구는 하나인데 도메인의 실제 약
 
 - `run_gate(baseline_dir, candidate_dir) -> GateResult` — 기존 엔진(`detect_paths`→`evaluate`→
   `exit_code`)을 **호출만** 하는 얇은 래퍼. 통계 0줄 재구현, 출력 수치는 CLI와 동일.
-- 제안 엔진(`app/mcp/suggest.py`)은 **룰 기반·결정적**: 실패모드→단계→기법 + config diff 역추적
+- 제안 엔진(`app/core/suggest.py`)은 **룰 기반·결정적**: 실패모드→단계→기법 + config diff 역추적
   ([`remediation_catalog.md`](remediation_catalog.md)). LLM 미사용, suggestion-only(자동 적용 없음).
 
 아직 "사용자 제공 플러그인"으로 추출만 한 건 도메인 어댑터(ScoringPlugin/GoldMatcher/EvalSetProvider/
 RAGAdapter)다 — DART/Wiki는 코드로 꽂혀 있고, 런타임 플러그인 주입(외부 도메인 등록)은 다음 단계.
+
+### 5.3 인터페이스 3종 (포트-어댑터) + 5중 일치 (Realized)
+
+판정·통계 코어를 **프레임워크 중립 모듈 `app/core/`**(`service`=run_gate 코어 · `analyze`=analyze_failures
+코어 · `suggest`=룰 제안)로 분리하고, 세 어댑터가 각자의 프로토콜로 그 코어를 노출한다 — **코어는 어느
+프레임워크도 모른다(포트-어댑터)**:
+
+| 인터페이스 | 어댑터 | 의존성 | 코어 |
+|---|---|---|---|
+| ① CLI | `scripts/run_gate.py` | pydantic만 | `app/core` |
+| ② MCP | `app/mcp/server.py` | + fastmcp(`[mcp]`) | `app/core` |
+| ③ REST API | `app/api/` | + fastapi/uvicorn | `app/core` |
+
+새 인터페이스를 붙여도 코어·엔진은 0줄. 어댑터는 통계를 재구현하지 않고 같은 함수를 부른다.
+
+**★ 5중 일치 (같은 입력 → 같은 판정)**: 게이트 수치가 5개 경로에서 동일하다 — **독립 부트스트랩**(교차검증용
+재구현) = **CLI** = **in-memory**(`detect()`) = **MCP** = **REST API**. 앞 셋은 엔진 결정성(노이즈밴드 std=0)이고,
+뒤 둘은 같은 코어를 부르는 어댑터다. CLI == MCP == API는 [`scripts/verify_api_equivalence.py`](../scripts/verify_api_equivalence.py)가
+같은 입력(allganize baseline/candidate)에 대해 verdict·exit_code·전 메트릭·전 필드 동일을 출력해 증명한다.
+
+**정직한 범위**: 이 API/MCP/CLI는 **run-log + attribution을 받아 판정·진단**하는 평가 서비스다. RAG 실행
+자체(무거운 인덱싱·LLM·임베딩)는 범위 밖 — 사용자 RAG가 run-log를 내보내면(§5.2의 run-log 계약) 게이트가
+소비한다. 과장 없이: 게이트의 본질은 *'생성'이 아니라 '소비·판정'* 이다.
 
 ### 5.2 범용성 비용과 절감 (Generic 어댑터)
 

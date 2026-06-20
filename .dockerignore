@@ -1,0 +1,15 @@
+# Keep the image lean — only app/ + catalog are COPYed by the Dockerfile anyway.
+__pycache__/
+*.pyc
+.git/
+.venv/
+venv/
+data/
+examples/
+reports/
+gate_runs/
+tests/
+docs/
+!docs/remediation_catalog.md
+*.md
+phase-*.md

@@ -150,6 +150,59 @@ LLM judge 호출이 없어 **같은 입력엔 같은 값**(재현 가능):
 
 ---
 
+## REST API — 같은 코어를 부르는 3번째 인터페이스
+
+CLI · MCP에 더해 **FastAPI REST 서비스**로도 노출한다. 셋 다 프레임워크 중립 코어(`app/core/`)를
+호출하므로 **같은 입력 → 같은 판정**(CLI == MCP == API). API 층은 fastapi/uvicorn만 의존하고 통계 로직을
+재구현하지 않는다(게이트 코어는 여전히 pydantic만).
+
+> **포트-어댑터 구조**: 판정·통계 코어(`app/core/`)는 프레임워크를 모르고, 각 어댑터가 자기 프로토콜로
+> 그 코어를 노출한다 — CLI(`scripts/run_gate.py`) / MCP(`app/mcp/`, fastmcp) / REST(`app/api/`, fastapi).
+> 새 인터페이스를 붙여도 코어는 그대로. 인터페이스 3종 = **같은 엔진의 3가지 접근**.
+
+| 엔드포인트 | 설명 |
+|---|---|
+| `GET /health` | 헬스체크 → `{"status":"ok","version":...}` |
+| `POST /evaluate` | 두 run(baseline↔candidate) 비교 → PASS/WARN/FAIL (`run_gate` 코어) |
+| `POST /analyze` | 단일 run 진단 → 병목·슬라이스·RAGAS·우선순위 (`analyze_failures` 코어) |
+| `GET /docs`·`/redoc` | OpenAPI 자동 문서(Swagger/ReDoc) |
+
+입력은 run 아티팩트 디렉토리 경로(`attribution.jsonl` (+baseline `noise_band.json`)) — CLI/MCP와 동일 계약.
+에러는 명확한 상태코드: **404**(경로/파일 없음) · **422**(필드 누락·타입오류·깨진 JSONL).
+
+```bash
+pip install -r requirements-api.txt          # gate(pydantic) + fastapi + uvicorn
+uvicorn app.api.main:app --port 8000         # /docs 에서 바로 호출 가능
+
+# 회귀 판정 (CLI/MCP와 동일 수치)
+curl -s localhost:8000/evaluate -H 'content-type: application/json' \
+  -d '{"baseline_dir":"examples/allganize_baseline","candidate_dir":"examples/allganize_candidate"}'
+#   → {"verdict":"FAIL","exit_code":1,"regressions":[{"metric":"answerable_accuracy","delta":-0.25,...}], ...}
+
+# 단일 run 진단
+curl -s localhost:8000/analyze -H 'content-type: application/json' \
+  -d '{"run_dir":"examples/allganize_baseline"}'
+#   → {"bottleneck_stage":"grounding","failure_distribution":{...},"ragas_equivalent":{...}, ...}
+```
+
+**Docker** (경량 — LLM/임베딩/torch 없음):
+```bash
+docker build -t rag-gate-api .
+docker run -p 8000:8000 rag-gate-api
+curl localhost:8000/health     # {"status":"ok","version":"0.1.0"}
+```
+
+> **범위**: 이 API는 run-log/attribution을 받아 **게이트 판정·진단**을 노출하는 평가 서비스다. RAG 실행
+> 자체(무거운 인덱싱/LLM)는 범위 밖 — 사용자 RAG가 run-log를 내보내면 게이트가 소비한다(run-log 계약).
+
+**★ 5중 일치 (같은 입력 → 같은 판정)**: 게이트 수치는 5개 경로에서 동일하다 —
+**독립 부트스트랩**(교차검증용 재구현) = **CLI** = **in-memory**(`detect()`) = **MCP** = **REST API**.
+앞 셋(엔진 결정성)에 더해 MCP·API가 같은 코어를 부르므로 인터페이스가 수치를 왜곡하지 않는다.
+CLI == MCP == API는 [`scripts/verify_api_equivalence.py`](scripts/verify_api_equivalence.py)가 같은 입력
+(allganize baseline/candidate)에 대해 verdict·exit_code·전 메트릭·전 필드 동일을 출력해 증명한다.
+
+---
+
 ## 메타 평가 — "분별 있게 반응한다" (Phase 5, config만 바꿔 생성)
 
 동일 baseline에 **config 한 개씩만** 바꿔 게이트에 통과시킨 결과(임계 조작 없음):
@@ -223,14 +276,20 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 app/rag/        수집·표추출·청킹·인덱싱·pipeline (DART/RAG)
 app/evaluator/  scorer · judge · validate_judge · attribution · metrics · case_eval
 app/regression/ detect(부트스트랩) · gate(PASS/WARN/FAIL)   ← 도메인 무관 엔진(3개 도메인 공유)
-app/interfaces.py  플러그인 Protocol 4종(+화이트리스트)   app/adapters/  dart · wiki · allganize 구현체
-app/mcp/        server(run_gate · analyze_failures 도구, fastmcp) · suggest(룰 기반 제안 엔진)   ← MCP, 옵션 extra
-scripts/        run_eval · run_attribution · measure_noise · run_scenario · run_gate · run_wiki_gate_demo · run_allganize_gate_demo
-examples/       baseline / demo_* / wiki_baseline · wiki_candidate / allganize_baseline · allganize_candidate  (게이트 입력 데모)
+app/interfaces.py  플러그인 Protocol 4종(+화이트리스트)   app/adapters/  dart · wiki · allganize · generic 구현체
+app/core/       service(run_gate 코어) · analyze(analyze_failures 코어) · suggest(룰 제안)  ← 프레임워크 중립 코어
+app/mcp/        server   ← 인터페이스① MCP 어댑터(fastmcp, 옵션 extra) — app/core 호출
+app/api/        main · schemas   ← 인터페이스② REST 어댑터(fastapi/uvicorn) — app/core 호출
+scripts/        run_gate(인터페이스③ CLI) · run_eval · run_attribution · measure_noise · *_gate_demo · demo_generic · verify_api_equivalence
+examples/       baseline / demo_* / wiki_* / allganize_baseline · allganize_candidate · allganize_generic  (게이트 입력 데모)
 data/wiki_eval/ SQuAD 2.0 발췌(20문항, CC BY-SA 4.0)   data/allganize_eval/ Allganize 법률·공공 발췌(40문항)+코퍼스+라이선스(MIT)
 reports/        원본 산출물(메트릭·노이즈밴드·judge검증·시나리오)   gate_runs/ 는 게이트 부산물
-docs/           portability(엔진 vs 도메인 경계 + 3도메인 실증) · interfaces(플러그인 설계) · remediation_catalog(제안 근거)
+docs/           portability(엔진 vs 도메인 경계 + 3도메인 실증 + 범용성 절감) · interfaces(플러그인 설계) · remediation_catalog(제안 근거)
+Dockerfile      REST API 컨테이너(경량 — pydantic+fastapi+uvicorn, LLM/임베딩 없음)
 ```
+
+> **인터페이스 3종 = 같은 코어**: 판정·통계는 `app/core/`(프레임워크 무관)에 한 번만 있고, ① MCP(`app/mcp`)
+> ② REST API(`app/api`) ③ CLI(`scripts/run_gate.py`)가 포트-어댑터로 그 코어를 노출한다 — 같은 입력 → 같은 판정.
 
 표추출의 알려진 한계는 [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md). (빌드 티켓·불변 규칙·기획 등 내부 작업 문서는 공개 범위에서 제외.)
 
