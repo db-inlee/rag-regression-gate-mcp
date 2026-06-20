@@ -1,77 +1,18 @@
-"""MCP server exposing the RAG regression gate as a tool (M1).
+"""MCP server exposing the RAG regression gate as tools (M1/M2).
 
-THIN WRAPPER: this layer reimplements no statistics. It calls the existing engine
-(detect.detect_paths -> gate.evaluate -> gate.exit_code) and projects the result
-onto Pydantic output models. Every number (delta, CI, significance, verdict, exit
-code) comes straight from the engine, so the MCP path matches `scripts/run_gate.py`.
-
-Design (phase-mcp §0): thin wrapper · input = plain str dir paths (same contract as
-the run_gate CLI) · output = Pydantic (FastMCP structured content; plain lists, no
-self-referential types) · suggestion-only (M1 gives verdict+diagnosis; suggestions
-are filled in M2). fastmcp is imported ONLY here and is an optional extra ([mcp]).
+THIN fastmcp ADAPTER: the projection/statistics core lives in app/core/service.py
+(framework-neutral) and is shared with the CLI and the REST API. This file only
+registers the core functions as MCP tools — fastmcp is imported ONLY here (the
+optional [mcp] extra). Every number comes from the engine via the shared core, so
+the MCP path matches scripts/run_gate.py and the REST API exactly.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from fastmcp import FastMCP
-from pydantic import BaseModel, Field
 
-from app.mcp.analyze import FailureAnalysis, build_analysis
-from app.mcp.suggest import build_suggestions
-from app.regression.detect import detect_paths
-from app.regression.gate import evaluate, exit_code, line
-
-
-class MetricDelta(BaseModel):
-    """One metric's baseline→candidate change (projected from a detect result row)."""
-
-    metric: str
-    baseline: float | None
-    candidate: float | None
-    delta: float
-    ci_low: float
-    ci_high: float
-    significant: bool
-    direction: str  # regression / improvement / warn / no_change
-
-
-class GateResult(BaseModel):
-    """Verdict + failure-mode diagnosis. suggestions filled by M2 (suggestion-only)."""
-
-    verdict: str = Field(description="PASS / WARN / FAIL")
-    exit_code: int = Field(description="FAIL=1, WARN/PASS=0 (CI-usable)")
-    regressions: list[MetricDelta] = Field(description="significant regressions (FAIL reasons)")
-    warnings: list[MetricDelta] = Field(description="borderline signals (one condition only)")
-    diagnosis: list[str] = Field(description="human-readable, failure-mode-centric lines")
-    suggestions: list[str] = Field(default_factory=list, description="remediation (M2); suggestion-only")
-
-
-def _delta(r: dict) -> MetricDelta:
-    """Pure projection of a detect result row onto MetricDelta (no logic)."""
-    return MetricDelta(
-        metric=r["metric"], baseline=r["baseline"], candidate=r["candidate"],
-        delta=r["delta"], ci_low=r["ci_low"], ci_high=r["ci_high"],
-        significant=r["significant"], direction=r["direction"],
-    )
-
-
-def build_gate_result(baseline_dir: str, candidate_dir: str) -> GateResult:
-    """Call the engine and project the result. The ONLY logic here is field mapping."""
-    report = detect_paths(Path(baseline_dir), Path(candidate_dir))  # bootstrap CI + band
-    gate = evaluate(report)                                         # PASS/WARN/FAIL + buckets
-    # diagnosis reuses gate.line() → identical wording to the CLI, zero reimplementation.
-    diagnosis = [line(r) for r in gate["fails"]] + [line(r, significant=False) for r in gate["warns"]]
-    return GateResult(
-        verdict=gate["status"],
-        exit_code=exit_code(gate),
-        regressions=[_delta(r) for r in gate["fails"]],
-        warnings=[_delta(r) for r in gate["warns"]],
-        diagnosis=diagnosis,
-        suggestions=build_suggestions(report, baseline_dir, candidate_dir),  # M2 (rule-based)
-    )
-
+from app.core.analyze import FailureAnalysis, build_analysis
+from app.core.service import GateResult, MetricDelta, build_gate_result  # noqa: F401
 
 mcp = FastMCP("rag-regression-gate")
 

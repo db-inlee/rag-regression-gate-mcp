@@ -1,0 +1,16 @@
+{
+  "run_id": "allganize_noise_1a13b95a9b06_r1_generic",
+  "answerable_accuracy": 0.55,
+  "answerable_total": 40,
+  "grounded_correct": 22,
+  "unsupported_correct": 0,
+  "no_answer_accuracy": null,
+  "over_answer_rate": null,
+  "retrieval_success_strict": 0.975,
+  "retrieval_miss_count": 1,
+  "failure_distribution": {
+    "correct": 22,
+    "hallucination": 17,
+    "retrieval_miss": 1
+  }
+}

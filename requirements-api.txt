@@ -1,0 +1,7 @@
+# Production REST API dependencies (phase A) = gate core + web server.
+# The gate statistics stay pydantic-only (requirements-gate.txt); the API adds the
+# FastAPI/uvicorn web layer on top. The projection core (app/core) is framework-
+# neutral, so the API does NOT depend on fastmcp (that stays in the [mcp] extra).
+-r requirements-gate.txt
+fastapi>=0.110
+uvicorn[standard]>=0.29

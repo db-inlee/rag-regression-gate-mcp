@@ -26,7 +26,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from app.mcp.suggest import _STAGE_KR, _parse_catalog
+from app.core.suggest import _STAGE_KR, _parse_catalog
 
 CLOSED_LOOP = "(자동 적용 안 함. 적용 후 run_gate로 개선 여부 검증.)"
 

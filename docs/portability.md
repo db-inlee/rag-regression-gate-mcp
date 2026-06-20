@@ -184,11 +184,64 @@ abstain 유도**를 권한다 — 도구는 하나인데 도메인의 실제 약
 
 - `run_gate(baseline_dir, candidate_dir) -> GateResult` — 기존 엔진(`detect_paths`→`evaluate`→
   `exit_code`)을 **호출만** 하는 얇은 래퍼. 통계 0줄 재구현, 출력 수치는 CLI와 동일.
-- 제안 엔진(`app/mcp/suggest.py`)은 **룰 기반·결정적**: 실패모드→단계→기법 + config diff 역추적
+- 제안 엔진(`app/core/suggest.py`)은 **룰 기반·결정적**: 실패모드→단계→기법 + config diff 역추적
   ([`remediation_catalog.md`](remediation_catalog.md)). LLM 미사용, suggestion-only(자동 적용 없음).
 
 아직 "사용자 제공 플러그인"으로 추출만 한 건 도메인 어댑터(ScoringPlugin/GoldMatcher/EvalSetProvider/
 RAGAdapter)다 — DART/Wiki는 코드로 꽂혀 있고, 런타임 플러그인 주입(외부 도메인 등록)은 다음 단계.
+
+### 5.3 인터페이스 3종 (포트-어댑터) + 5중 일치 (Realized)
+
+판정·통계 코어를 **프레임워크 중립 모듈 `app/core/`**(`service`=run_gate 코어 · `analyze`=analyze_failures
+코어 · `suggest`=룰 제안)로 분리하고, 세 어댑터가 각자의 프로토콜로 그 코어를 노출한다 — **코어는 어느
+프레임워크도 모른다(포트-어댑터)**:
+
+| 인터페이스 | 어댑터 | 의존성 | 코어 |
+|---|---|---|---|
+| ① CLI | `scripts/run_gate.py` | pydantic만 | `app/core` |
+| ② MCP | `app/mcp/server.py` | + fastmcp(`[mcp]`) | `app/core` |
+| ③ REST API | `app/api/` | + fastapi/uvicorn | `app/core` |
+
+새 인터페이스를 붙여도 코어·엔진은 0줄. 어댑터는 통계를 재구현하지 않고 같은 함수를 부른다.
+
+**★ 5중 일치 (같은 입력 → 같은 판정)**: 게이트 수치가 5개 경로에서 동일하다 — **독립 부트스트랩**(교차검증용
+재구현) = **CLI** = **in-memory**(`detect()`) = **MCP** = **REST API**. 앞 셋은 엔진 결정성(노이즈밴드 std=0)이고,
+뒤 둘은 같은 코어를 부르는 어댑터다. CLI == MCP == API는 [`scripts/verify_api_equivalence.py`](../scripts/verify_api_equivalence.py)가
+같은 입력(allganize baseline/candidate)에 대해 verdict·exit_code·전 메트릭·전 필드 동일을 출력해 증명한다.
+
+**정직한 범위**: 이 API/MCP/CLI는 **run-log + attribution을 받아 판정·진단**하는 평가 서비스다. RAG 실행
+자체(무거운 인덱싱·LLM·임베딩)는 범위 밖 — 사용자 RAG가 run-log를 내보내면(§5.2의 run-log 계약) 게이트가
+소비한다. 과장 없이: 게이트의 본질은 *'생성'이 아니라 '소비·판정'* 이다.
+
+### 5.2 범용성 비용과 절감 (Generic 어댑터)
+
+3도메인을 거치며 드러난 건, 도메인마다 갈리는 게 **"키/필드 이름"뿐이고 로직은 엔진 공유**라는 점이다.
+그래서 새 도메인의 비용을 "클래스 구현"에서 "설정/lambda"로 낮출 수 있다(`app/adapters/generic.py` —
+순수 추가, 엔진·기존 어댑터 0줄).
+
+**비용 (피할 수 없는 것)**: 도메인마다 4 인터페이스(EvalSet/GoldMatcher/Scoring/RAG)를 채워야 한다 —
+이건 결함이 아니라 어댑터 패턴 그 자체다. 도메인의 gold 모양·근거 단위·언어가 실제로 다르기 때문.
+
+**절감 (설정으로 낮춘 것)** — 기존 클래스를 Generic으로 재현해 **전 필드 diff 0**으로 실측:
+
+| 인터페이스 | 도메인 전용 클래스 | Generic(설정) | 실측(Allganize) |
+|---|---|---|---|
+| GoldMatcher | gold/retrieved 키 추출을 클래스로 | `GenericGoldMatcher(gold_key, retrieved_key)` — **lambda 2개** | 40케이스 gold_refs/retrieved_refs 동일 |
+| value_present | 도메인별 함수(거의 동일) | `make_value_present(matcher)` — **matcher 키 재사용** | 40케이스 bool 동일 |
+| EvalSetProvider | `_to_case` 손으로 매핑 | `GenericEvalSetProvider(ColumnMap)` — **컬럼 매핑** | 40 EvalCase 전 필드 동일 |
+
+즉 GoldMatcher는 lambda 2개, value_present는 matcher 재사용 한 줄, EvalSet은 컬럼 매핑으로 — **"구현"이
+"설정"으로** 낮아진다. 통합 데모(`scripts/demo_generic.py`)는 Allganize를 Generic 3컴포넌트로 통째로
+재구성해 attribution/metrics가 전용 어댑터와 일치함을 보이고, **`run_gate`(전용 baseline vs Generic
+candidate) = PASS**로 엔진 자신이 "리팩터가 결과를 안 바꿨다"를 인증한다(기존 검증 방식 그대로).
+
+**일반화하지 않은 것 (정직)**:
+- **RAGAdapter는 일반화하지 않는다** — 도메인마다 RAG(임베딩·청킹·생성)가 본질적으로 다르다. 게다가
+  실사용자는 *자기 RAG를 이미 가지고 있다* → run-log(`run.jsonl` + `attribution.jsonl`)만 내보내면
+  게이트가 동작하므로 RAGAdapter 자체가 거의 불필요하다(run-log 계약으로 충분).
+- **도메인 특수 로직은 전용으로 남을 수 있다** — DART의 `source_ref` tuple 파싱이나 숫자값-in-context
+  정밀 매칭처럼 단순 키 추출을 넘는 로직은 Generic으로 무리하게 욱여넣지 않는다(과장 금지). Generic은
+  "키/컬럼만 다른 흔한 경우"를 설정으로 낮추는 것이지, 모든 도메인 로직을 대체하는 게 아니다.
 
 ---
 
