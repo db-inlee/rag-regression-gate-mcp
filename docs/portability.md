@@ -117,37 +117,65 @@ MCP에서는 **Value-Presence Hook**이 두 갈래를 가진다:
 
 ## 5. 엔진 범용성 실증 (Realized)
 
-위 설계(인터페이스 4종 + 보조 hook 2종)를 실제로 구현해 **두 도메인을 같은 엔진으로 처리**했다.
+위 설계(인터페이스 4종 + 보조 hook 2종)를 실제로 구현해 **세 도메인을 같은 엔진으로 처리**했다.
 
-- **DART(한국 금융 사업보고서, 100문항)** — 메인 레퍼런스.
-- **영어 위키 QA(SQuAD 2.0, 20문항)** — 인터페이스 검증용 **미니 인스턴스**. 정직히 말해
-  규모가 작고(20문항) **쉬운 추출형(factoid)** 위주라, DART의 표값·숫자추론·서술형 같은
+- **DART(한국 금융 사업보고서, 100문항)** — 메인 레퍼런스. **우리가 구축**한 평가셋. 병목=**검색**.
+- **영어 위키 QA(SQuAD 2.0, 20문항)** — 인터페이스 검증용 **미니 인스턴스**. **우리가 발췌**. 정직히
+  말해 규모가 작고(20문항) **쉬운 추출형(factoid)** 위주라, DART의 표값·숫자추론·서술형 같은
   난도/다양성은 없다. "범용성이 꽂히는지"를 보이는 용도이지 DART를 대체하지 않는다.
+- **Allganize 법률·공공(한국어, 40문항)** — **외부 공개 gold**(datalama/RAG-Evaluation-Dataset-KO,
+  MIT). ★ 앞의 둘과 결정적으로 다른 점: **우리가 만들지 않은 남의 gold**(질문+정답+근거문서)이고,
+  병목이 **DART와 정반대(생성/그라운딩)** 다. "우리가 설계한 평가셋에만 맞춰진 엔진"이 아니라는,
+  **더 강한 범용성 증거**다. 단 이것도 발췌(40) 미니 인스턴스이며 DART가 메인 레퍼런스다.
 
-두 도메인은 같은 엔진(`app/regression/*`, `app/evaluator/metrics.py`)으로 PASS/WARN/FAIL을 낸다.
-**위키 도메인을 통째로 추가했지만 엔진은 한 줄도 안 바뀌었다** — git으로 증명:
+세 도메인은 같은 엔진(`app/regression/*`, `app/evaluator/metrics.py`)으로 PASS/WARN/FAIL을 낸다.
+**위키·Allganize 도메인을 통째로 추가했지만 엔진은 한 줄도 안 바뀌었다** — git으로 증명:
 
 ```
-$ git diff --numstat <DART-v1> HEAD -- app/regression/ app/evaluator/metrics.py scripts/measure_noise.py
-(empty)        # detect / gate / 결합규칙 / noise_band = 0 라인
+$ git diff --numstat <DART-v1> HEAD -- app/regression/ app/evaluator/ \
+      app/interfaces.py app/schemas.py app/config.py app/rag/ app/mcp/
+(empty)        # detect / gate / 결합규칙 / noise_band / 공유코드 = 0 라인
 ```
 
-도메인이 갈리는 지점은 **플러그인 구현뿐**이다(`app/interfaces.py`, `app/adapters/{dart,wiki}.py`):
+도메인이 갈리는 지점은 **플러그인 구현뿐**이다(`app/interfaces.py`, `app/adapters/{dart,wiki,allganize}.py`):
 
-| 인터페이스 | DART | Wiki |
+| 인터페이스 | DART (금융) | Wiki (영어) | Allganize (법률·공공) |
+|---|---|---|---|
+| gold 출처 | 우리 구축 | 우리 발췌 | **외부 공개 gold (남이 만듦)** |
+| GoldMatcher 근거 키 | `(table, file, id)` / `(page,…)` | `doc_id`(문단) | **`pid`(문서)** — 더 거침 |
+| ⊆ 집합 비교 (retrieval_miss) | **동일 골격**(`gold_retrieved`, judge 없음) | **동일 골격** | **동일 골격** |
+| 임베딩 (config 값) | bge-m3 | all-MiniLM-L6-v2 | bge-m3 |
+| 채점·거부문구 | 한국어 | 영어 | **한국어 — DART ScoringPlugin 재활용** |
+| EvalSet / 슬라이스 | 표값·숫자·본문·답없음 | factoid·no_answer | paragraph·table |
+| 관측 병목 | **retrieval** | (소표본) | **grounding (DART와 정반대)** |
+
+즉 GoldMatcher의 **근거 키만** `(table,file,id) ↔ doc_id ↔ pid`로 갈리고 **⊆ 집합 비교는 동일**하다
+(gold 근거의 *단위*가 도메인마다 다르다 — DART=페이지/표, 위키=문단, Allganize=문서 — 는 것 자체가
+범용성의 증거). 엔진은 `gate_fields`(케이스별 boolean)와 `noise_band`라는 동일 포맷만 받으면 도메인을
+모른다. ScoringPlugin은 같은 한국어라 **Allganize가 DART 구현을 그대로 재활용**한다.
+
+**★ 같은 진단 도구, 도메인별 다른 처방**: 동일한 `analyze_failures`(MCP)가 DART에선 병목을
+*검색*으로 짚어 **top_k↑·청킹**을 권하고, Allganize에선 *그라운딩*으로 짚어 **citation 강제·
+abstain 유도**를 권한다 — 도구는 하나인데 도메인의 실제 약점에 따라 처방이 갈린다.
+
+| analyze_failures 진단 | DART (금융) | Allganize (법률·공공) |
 |---|---|---|
-| GoldMatcher 근거 키 | `(table, file, table_id)` / `(page, …)` | `doc_id` |
-| ⊆ 집합 비교 (retrieval_miss) | **동일 골격**(`gold_retrieved`, judge 없음) | **동일 골격** |
-| 임베딩 (config 값) | bge-m3 | all-MiniLM-L6-v2 |
-| 채점·거부문구 | 한국어 | 영어 |
-| EvalSet / 슬라이스 | 표값·숫자·본문·답없음 | factoid·no_answer |
+| bottleneck_stage | **retrieval** | **grounding** |
+| context_recall (≈retrieval_success) | 0.19 (낮음) | 0.975 (높음) |
+| 최다 실패모드 | retrieval_miss | hallucination |
+| 처방(룰 카탈로그) | top_k↑·청크 축소 | citation·abstain |
 
-즉 GoldMatcher만 `(table,file,id) ↔ doc_id`로 갈리고 **⊆ 집합 비교는 동일**하다. 엔진은
-`gate_fields`(케이스별 boolean)와 `noise_band`라는 동일 포맷만 받으면 도메인을 모른다.
+> 재현: `python scripts/run_allganize_gate_demo.py` (baseline 노이즈밴드 + top_k 5→1 candidate +
+> 게이트). 결과: Allganize **게이트 FAIL** — answerable 정확도 0.55→0.30 유의 하락 + retrieval_miss
+> 1→5 유의 증가를 judge 없이 검출. (위키는 `python scripts/run_wiki_gate_demo.py` → `retrieval_miss`
+> 0→3 검출, 20문항 소표본이라 CI가 0에 닿아 보수적으로 WARN — 셋 다 동일한 결합규칙.)
 
-> 재현: `python scripts/run_wiki_gate_demo.py` (baseline 노이즈밴드 + top_k 5→1 candidate +
-> 게이트). 결과: 위키 `retrieval_miss` 0→3을 judge 없이 검출, 게이트 WARN(20문항 소표본에서
-> 부트스트랩 CI가 0에 닿아 보수적으로 FAIL이 아닌 WARN — DART와 동일한 결합규칙).
+> **Allganize의 정직한 한계**: gold 근거가 **문서 단위(pid)** 라 DART(페이지/표 단위)보다 **거칠다
+> (coarser)** — 같은 문서의 다른 페이지를 검색해도 retrieval_success로 친다(groundedness도 같은
+> 이유로 문서 단위). 또 일부 원문 PDF는 **전부 스캔 이미지**(추출 텍스트 0)라 해당 문서를 gold로 하는
+> 문항은 무조건 retrieval_miss가 되어 **선택에서 제외**했다(이미지 미처리 범위와 일관). 40문항 **미니
+> 발췌**이고 DART(100문항)가 메인 레퍼런스다. 출처/라이선스: datalama/RAG-Evaluation-Dataset-KO,
+> **MIT** (`data/allganize_eval/LICENSE.md`).
 
 ### 5.1 MCP 제품화 (Realized)
 
@@ -172,7 +200,7 @@ RAGAdapter)다 — DART/Wiki는 코드로 꽂혀 있고, 런타임 플러그인 
 
 | 가진 gold | 작동 범위 | retrieval_miss / value-presence |
 |---|---|---|
-| **정답 + 근거 라벨** (DART) | accuracy · retrieval_miss · groundedness **전 기능** | gold 근거 ⊆ retrieved 집합 비교 (`is_retrieval_miss`, 결정적) |
+| **정답 + 근거 라벨** (DART=페이지/표, Allganize=문서) | accuracy · retrieval_miss · groundedness **전 기능** | gold 근거 ⊆ retrieved 집합 비교 (`is_retrieval_miss`, 결정적). 근거 *단위*는 도메인이 정함 — 문서 단위(Allganize)는 페이지/표 단위(DART)보다 **거칠다** |
 | **정답만** (근거 라벨 없음 — 더 흔한 경우) | accuracy 작동, retrieval은 약한 프록시로 대체 | *'정답 텍스트가 검색 청크에 등장하나'* — 위키 `wiki_value_present`가 정답 문자열↔청크 매칭으로 이 방식(§4.2의 숫자형 value-presence와 같은 갈래) |
 | **정답조차 없음** (reference-free) | **범위 밖** | 정답 없이 옳고 그름을 판정하려면 judge 의존이 불가피 → 결정성 원칙(노이즈밴드 std=0, 거짓경보 0건)과 충돌하므로 다루지 않음 |
 

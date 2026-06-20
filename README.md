@@ -2,7 +2,7 @@
 
 _MCP 서버로 제공하는 RAG 파이프라인 회귀 진단 게이트 — 점수 하락이 아니라 어떤 실패모드가 회귀했는지 진단._
 
-> ℹ️ **MCP 서버 제공**(`run_gate` 도구 + 룰 기반 제안 엔진) — 아래 "MCP 서버" 섹션. **범용화 완료: 2개 도메인 실증**(DART 한국 금융 100문항 + 영어 위키 SQuAD 2.0 20문항, 엔진 코드 0줄 변경). 인터페이스/경계 설계는 [`docs/portability.md`](docs/portability.md) 참조.
+> ℹ️ **MCP 서버 제공**(`run_gate` + `analyze_failures` 도구 + 룰 기반 제안 엔진) — 아래 "MCP 서버" 섹션. **범용화 완료: 3개 도메인 실증**(DART 한국 금융 100문항 + 영어 위키 SQuAD 2.0 20문항 + **Allganize 한국 법률·공공 40문항(외부 공개 gold)**, 엔진 코드 0줄 변경). 인터페이스/경계 설계는 [`docs/portability.md`](docs/portability.md) 참조.
 
 > **이건 "RAG 성능"을 높이는 프로젝트가 아니라, RAG 변경의 "품질 회귀"를 CI/PR에서 자동으로
 > 잡는 감시 게이트 프로젝트다.** baseline의 answerable 정확도 20%는 *측정 대상*일 뿐이고, 핵심은
@@ -196,7 +196,7 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 - **groundedness 분리**: 맞은 답도 **정답값이 검색 근거에 실재(grounded)** 하는지 확인. 암기/운으로 맞은 `unsupported_correct`는 헤드라인 정확도에서 분리(모델 암기력이 RAG 점수를 부풀리지 않게).
 - **no_answer 착시 방어**: answerable 정확도와 no_answer 정확도를 **항상 짝으로** 보고(전부 거부하는 시스템이 들통나도록).
 - **통계적 정직 + 거짓경보 0건**: 노이즈밴드 + 부트스트랩으로 "유의한 회귀만" FAIL. **같은 config 재실행은 항상 PASS**(거짓경보 0건)로 게이트 신뢰성 검증 — 데모용 임계 조작 없음.
-- **도메인 범용성 실증**: 두 도메인(DART 한국 금융 / 영어 위키 QA)에서 **같은 게이트 작동, 엔진 코드 0줄 변경**(`app/regression/*` git diff = 0). 단, 위키는 인터페이스 검증용 **미니 인스턴스**(20문항·쉬운 추출형)이고 **DART(100문항)가 메인 레퍼런스**다. → [`docs/portability.md` §5](docs/portability.md).
+- **도메인 범용성 실증(3도메인)**: DART(한국 금융) / 영어 위키 QA / **Allganize(한국 법률·공공, 외부 공개 gold)** 에서 **같은 게이트 작동, 엔진 코드 0줄 변경**(git diff = 0). ★ Allganize는 **우리가 만들지 않은 남의 gold**이고 병목이 **DART와 정반대(검색 vs 생성/그라운딩)** — 같은 `analyze_failures`가 DART엔 top_k↑, Allganize엔 citation을 처방한다(더 강한 범용성 증거). 단 위키·Allganize는 인터페이스 검증용 **미니 인스턴스**(20·40문항)이고 **DART(100문항)가 메인 레퍼런스**다. Allganize는 문서 단위 매칭이라 DART보다 거칠고 스캔 이미지 문서는 제외. 출처: datalama/RAG-Evaluation-Dataset-KO(MIT). → [`docs/portability.md` §5](docs/portability.md).
 
 ## 정직한 경계 (적용 범위)
 
@@ -226,14 +226,14 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 ```
 app/rag/        수집·표추출·청킹·인덱싱·pipeline (DART/RAG)
 app/evaluator/  scorer · judge · validate_judge · attribution · metrics · case_eval
-app/regression/ detect(부트스트랩) · gate(PASS/WARN/FAIL)   ← 도메인 무관 엔진(2개 도메인 공유)
-app/interfaces.py  플러그인 Protocol 4종(+화이트리스트)   app/adapters/  dart · wiki 구현체
-app/mcp/        server(run_gate 도구, fastmcp) · suggest(룰 기반 제안 엔진)   ← MCP, 옵션 extra
-scripts/        run_eval · run_attribution · measure_noise · run_scenario · run_gate · run_wiki_gate_demo
-examples/       baseline / demo_neutral / demo_regression / wiki_baseline / wiki_candidate  (게이트 입력 데모)
-data/wiki_eval/ SQuAD 2.0 발췌(20문항) + 코퍼스 + 라이선스(CC BY-SA 4.0)
+app/regression/ detect(부트스트랩) · gate(PASS/WARN/FAIL)   ← 도메인 무관 엔진(3개 도메인 공유)
+app/interfaces.py  플러그인 Protocol 4종(+화이트리스트)   app/adapters/  dart · wiki · allganize 구현체
+app/mcp/        server(run_gate · analyze_failures 도구, fastmcp) · suggest(룰 기반 제안 엔진)   ← MCP, 옵션 extra
+scripts/        run_eval · run_attribution · measure_noise · run_scenario · run_gate · run_wiki_gate_demo · run_allganize_gate_demo
+examples/       baseline / demo_* / wiki_baseline · wiki_candidate / allganize_baseline · allganize_candidate  (게이트 입력 데모)
+data/wiki_eval/ SQuAD 2.0 발췌(20문항, CC BY-SA 4.0)   data/allganize_eval/ Allganize 법률·공공 발췌(40문항)+코퍼스+라이선스(MIT)
 reports/        원본 산출물(메트릭·노이즈밴드·judge검증·시나리오)   gate_runs/ 는 게이트 부산물
-docs/           portability(엔진 vs 도메인 경계 + 2도메인 실증) · interfaces(플러그인 설계) · remediation_catalog(제안 근거)
+docs/           portability(엔진 vs 도메인 경계 + 3도메인 실증) · interfaces(플러그인 설계) · remediation_catalog(제안 근거)
 ```
 
 표추출의 알려진 한계는 [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md). (빌드 티켓·불변 규칙·기획 등 내부 작업 문서는 공개 범위에서 제외.)
