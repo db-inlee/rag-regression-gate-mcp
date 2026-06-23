@@ -1,5 +1,8 @@
 # RAG Regression Gate (MCP)
 
+![CI](https://github.com/db-inlee/rag-regression-gate-mcp/actions/workflows/regression-gate.yml/badge.svg)
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)
+
 **What this is** — RAG 운영자를 위한 진단 도구: *"무엇이 회귀했나"*(`run_gate`)와 *"지금 뭘 고쳐야 하나"*(`analyze_failures`)를 둘 다 답한다. 단순 "점수 하락"이 아니라 **실패모드**(retrieval_miss·hallucination 등)를 본다. RAG를 실행하지 않고 이미 만들어진 run-log를 **소비·판정**한다([ADR-001](docs/adr/ADR-001-run-log-based-gate.md)). *(baseline의 answerable 정확도 20%는 측정 대상일 뿐 — 산출물은 게이트의 분별력.)*
 
 **Inputs** — baseline·candidate 각 디렉토리의 `run.jsonl` + `attribution.jsonl` (+ baseline `noise_band.json`). 필드·타입·예시(스키마 계약): [`docs/artifact_contract.md`](docs/artifact_contract.md).
@@ -12,7 +15,7 @@
 
 **Why not DART-specific** — 엔진은 도메인을 모르고 4개 플러그인이 도메인 의존부를 담당. **3도메인**(DART 한국 금융 100 / 영어 위키 20 / Allganize 한국 법률·공공 40, 외부 공개 gold)에서 **엔진 git diff = 0** 실증. DART는 레퍼런스 인스턴스일 뿐. → [ADR-003](docs/adr/ADR-003-domain-adapters.md) · [`docs/portability.md`](docs/portability.md).
 
-**Limitations** — **gold(평가셋) 전제**(reference-free는 범위 밖); 위키·Allganize는 인터페이스 검증용 **미니 인스턴스**(20·40문항, 방향성 증거 — DART 100이 메인 레퍼런스); Allganize는 **문서 단위 매칭**이라 DART(페이지/표)보다 거침. ↓ "정직한 경계".
+**Limitations** — **gold(평가셋) 전제**(reference-free는 범위 밖); 위키·Allganize는 인터페이스 검증용 **미니 인스턴스**(20·40문항, 방향성 증거 — DART 100이 메인 레퍼런스); Allganize는 **문서 단위 매칭**이라 DART(페이지/표)보다 거침. ↓ "적용 범위와 한계".
 
 ---
 
@@ -250,9 +253,9 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 - **통계적 정직 + 거짓경보 0건**: 노이즈밴드 + 부트스트랩으로 "유의한 회귀만" FAIL. 같은 config 재실행은 항상 PASS(거짓경보 0건)로 게이트 신뢰성 검증 — 데모용 임계 조작 없음.
 - **도메인 범용성 실증(3도메인)**: DART(한국 금융) / 영어 위키 QA / Allganize(한국 법률·공공, 외부 공개 gold)에서 같은 게이트 작동, 엔진 코드 0줄 변경(git diff = 0). ★ Allganize는 우리가 만들지 않은 남의 gold이고 병목이 DART와 정반대(검색 vs 생성/그라운딩) — 같은 `analyze_failures`가 DART엔 top_k↑, Allganize엔 citation을 처방한다(더 강한 범용성 증거). 단 위키·Allganize는 인터페이스 검증용 미니 인스턴스(20·40문항)이고 DART(100문항)가 메인 레퍼런스다. Allganize는 문서 단위 매칭이라 DART보다 거칠고 스캔 이미지 문서는 제외. 출처: datalama/RAG-Evaluation-Dataset-KO(MIT). → [`docs/portability.md` §5](docs/portability.md).
 
-## 정직한 경계 (적용 범위)
+## 적용 범위와 한계
 
-과장하지 않기 위해 **못 하는 것**도 명시한다. 이 엔진은 **gold(평가셋)를 전제**로 한다 — 가진 gold에 따라 작동 범위가 갈린다:
+이 엔진은 **gold(평가셋)를 전제**로 한다. 가진 gold의 종류에 따라 작동 범위가 갈린다:
 
 - **정답 + 근거 라벨**(DART) → accuracy · retrieval_miss · groundedness **전 기능**(gold 근거 ⊆ retrieved, 결정적).
 - **정답만**(근거 라벨 없음 — 더 흔함) → accuracy 작동, retrieval_miss는 *'정답 텍스트가 검색 청크에 있나'* 로 대체 가능(위키 `wiki_value_present`가 이 방식).
@@ -272,6 +275,19 @@ DART(평가셋·표추출·한국어 숫자정규화·표 도메인 taxonomy)는
 
 - **모델 1(현재)**: 무거운 RAG는 CI 밖에서 실행, candidate 산출물을 PR에 첨부. CI는 게이트만(`.github/workflows/regression-gate.yml`).
 - **모델 2(전환 경로)**: `generate-candidate.yml`(Job 1, 스켈레톤)의 트리거를 `pull_request`로 바꾸고 게이트로 핸드오프하면 완전 자동 — **게이트 로직은 한 줄도 안 바뀐다.**
+
+## 테스트
+
+`python -m pytest -q` → **56 passed** (LLM·임베딩 없이; 게이트는 결정적이라 기대값을 정확히 박는다).
+부품 테스트(scorer/judge/table_extract)에 더해 **게이트 행동 자체**를 검증한다:
+
+| 파일 | 무엇을 고정하나 |
+|---|---|
+| `test_gate_behavior.py` | 회귀 FAIL / 동일 run PASS / 노이즈 floor·경계 WARN (거짓경보 0건) |
+| `test_interface_equivalence.py` | 코어 == REST API == `detect_paths` 동치, API의 fastmcp 비의존 |
+| `test_generic_adapter.py` | Generic 어댑터가 전용 어댑터를 정확히 재현(GoldMatcher/EvalProvider/value_present) |
+| `test_noise_floor_domain.py` | floor가 런타임 모집단(40·100) 사용 — denom 하드코딩 회귀 방지 |
+| `test_attribution_contract.py` | gold-free 판정 + attribution 필수 8필드([`artifact_contract.md`](docs/artifact_contract.md) 강제) |
 
 ## 구조
 
