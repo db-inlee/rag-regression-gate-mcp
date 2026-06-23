@@ -32,18 +32,23 @@ RUNS_DIR = Path("reports/runs")
 NOISE_BAND = Path("reports/noise_band.json")
 BOOT = 1000
 
-# metric -> (kind, population, denom, regression_direction, noise_key)
-#   kind: "prop" (rate over denom) | "count" (cases out of population)
+# metric -> (kind, population, regression_direction, noise_key)
+#   kind: "prop" (rate over population) | "count" (cases out of population)
+#   population: "answerable" | "no_answer" | "all" — the denominator is the RUNTIME
+#     size of this population (domain-agnostic). For DART that is 85/15/100; for other
+#     domains (Allganize 40, Wiki 12/8) it is their actual counts. Previously the
+#     denom was hardcoded to DART's 85/15/100, which mis-scaled the ±1-case floor on
+#     non-DART domains (see _effective_band_cases / _population_size).
 #   regression_direction: "down" (lower=worse) | "up" (higher=worse)
 METRICS = {
-    "answerable_accuracy":            ("prop", "answerable", 85, "down", "answerable_accuracy"),
-    "retrieval_success_strict":       ("prop", "answerable", 85, "down", "retrieval_success_strict"),
-    "retrieval_success_value_present":("prop", "answerable", 85, "down", "retrieval_success_value_present"),
-    "no_answer_accuracy":             ("prop", "no_answer", 15, "down", "no_answer_accuracy"),
-    "over_answer_rate":               ("prop", "no_answer", 15, "up",   "over_answer_rate"),
-    "retrieval_miss":                 ("count", "all", 100, "up", "mode:retrieval_miss"),
-    "hallucination":                  ("count", "all", 100, "up", "mode:hallucination"),
-    "over_answer":                    ("count", "no_answer", 15, "up", "over_answer_rate"),
+    "answerable_accuracy":            ("prop", "answerable", "down", "answerable_accuracy"),
+    "retrieval_success_strict":       ("prop", "answerable", "down", "retrieval_success_strict"),
+    "retrieval_success_value_present":("prop", "answerable", "down", "retrieval_success_value_present"),
+    "no_answer_accuracy":             ("prop", "no_answer", "down", "no_answer_accuracy"),
+    "over_answer_rate":               ("prop", "no_answer", "up",   "over_answer_rate"),
+    "retrieval_miss":                 ("count", "all", "up", "mode:retrieval_miss"),
+    "hallucination":                  ("count", "all", "up", "mode:hallucination"),
+    "over_answer":                    ("count", "no_answer", "up", "over_answer_rate"),
 }
 
 
@@ -79,7 +84,7 @@ def case_features(run_id: str, cases: dict) -> dict:
 
 
 def _metric_value(ids: list[str], feats: dict, metric: str) -> float | None:
-    kind, pop, _, _, _ = METRICS[metric]
+    kind, pop, _, _ = METRICS[metric]  # tuple-arity only; value logic below uses len(sub), unchanged
     if pop == "answerable":
         sub = [i for i in ids if feats[i]["answerable"]]
     elif pop == "no_answer":
@@ -116,11 +121,25 @@ def _percentile(sorted_vals: list[float], q: float) -> float:
     return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (k - lo)
 
 
-def _effective_band_cases(metric: str, band_file: dict) -> float:
-    """Measured noise band converted to CASES, floored at 1."""
-    _, _, denom, _, key = METRICS[metric]
+def _population_size(pop: str, ids: list[str], feats: dict) -> int:
+    """Runtime size of a metric's population (domain-agnostic denominator).
+
+    "answerable"/"no_answer" count the matching cases in THIS run; "all" is len(ids).
+    For DART this returns 85/15/100; for other domains their actual counts — so the
+    ±1-case floor is measured in real cases, not DART-case units."""
+    if pop == "answerable":
+        return sum(1 for i in ids if feats[i]["answerable"])
+    if pop == "no_answer":
+        return sum(1 for i in ids if not feats[i]["answerable"])
+    return len(ids)
+
+
+def _effective_band_cases(metric: str, band_file: dict, denom: int) -> float:
+    """Measured noise band converted to CASES, floored at 1.
+
+    `denom` is the runtime population size for this metric (see _population_size)."""
+    kind, _, _, key = METRICS[metric]
     std = (band_file.get("metric_band", {}).get(key, {}) or {}).get("std") or 0.0
-    kind = METRICS[metric][0]
     band_cases = std * denom if kind == "prop" else std
     return max(band_cases, 1.0)
 
@@ -148,7 +167,8 @@ def features_from_enriched(attr_path: Path) -> dict:
 def _bootstrap(case_ids: list[str], B: dict, C: dict, band_file: dict, config: RagConfig) -> list[dict]:
     rng = random.Random(config.seed)
     results = []
-    for metric, (kind, pop, denom, reg_dir, _) in METRICS.items():
+    for metric, (kind, pop, reg_dir, _) in METRICS.items():
+        denom = _population_size(pop, case_ids, B)  # runtime population (baseline = candidate eval-set)
         base = _metric_value(case_ids, B, metric)
         cand = _metric_value(case_ids, C, metric)
         delta = (cand - base) if (base is not None and cand is not None) else 0.0
@@ -167,8 +187,8 @@ def _bootstrap(case_ids: list[str], B: dict, C: dict, band_file: dict, config: R
         ci_excludes_0 = ci_low > 0 or ci_high < 0
         regressing = (delta < 0) if reg_dir == "down" else (delta > 0)
         improving = not regressing and ci_excludes_0
-        # (b) |delta| beyond effective band (in cases)
-        eff_band = _effective_band_cases(metric, band_file)
+        # (b) |delta| beyond effective band (in cases) — denom is runtime population
+        eff_band = _effective_band_cases(metric, band_file, denom)
         delta_cases = abs(delta) * (denom if kind == "prop" else 1)
         beyond_band = delta_cases > eff_band
 

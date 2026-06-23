@@ -96,6 +96,19 @@
 | **게이트 출력이 reports/ 오염** | reports/는 원본 전용이어야 | 출력 `gate_runs/`(gitignore)로 분리, reports/ 청소 |
 | **README 문서 경로 부정확** — `tasks/`·`docs/plan` | 파일 위치 점검 | 실제(루트)로 수정 |
 
+## 감사 — 하드코딩 자가 점검 (denom 도메인 무관화)
+
+스스로 "하드코딩이 있나" 감사하다 찾은 결함이다. case_034·judge 무효 probe를 고친 것과 같은 결의 정직성 — 숨기지 않고 고치고 기록한다.
+
+| 검증으로 발견한 결함 | 근거 | 수정 |
+|---|---|---|
+| **noise-band floor가 denom을 DART 크기(85/15/100)로 하드코딩** — 타도메인에서 "±1-case floor"가 DART 케이스 단위로 환산됨. Allganize 1케이스 변화(1/40=0.025)가 `0.025×85=2.125`로 평가, Wiki(12/8)도 어긋남 | **하드코딩 감사**(스스로 점검). `detect.py` METRICS 튜플의 denom 상수 + `_effective_band_cases`/`delta_cases` 추적 | denom을 **런타임 모집단**으로 유도 — METRICS의 `population` 라벨("answerable"/"no_answer"/"all")에서 현재 run의 실제 케이스 수를 계산(`_population_size`). 하드코딩 85/15/100 제거(중복이었음). 메트릭 값 계산(`_metric_value`, 이미 `len(sub)`로 정상)은 불변 |
+
+- **왜 중요한가**: 이 프로젝트의 핵심 주장은 "회귀 엔진은 **도메인 무관**"이다. 메트릭 값·⊆ 비교는 도메인 무관이었는데, **floor 보정만 DART 크기에 묶여 있던 유일한 지점** — 주장과 정면 충돌.
+- **★ 안전 증명 (DART 불변)**: DART는 런타임 모집단이 정확히 answerable 85 / no_answer 15 / all 100 → 기존 하드코딩과 동일값 → 수정 전후 `build_gate_result`·`detect_results`(`effective_band_cases` 포함)가 **byte-단위 deep-equal**(regression FAIL·neutral PASS 그대로). 회귀 0.
+- **★ engine 0줄 불변식**: 모든 phase가 지켜온 "engine 0줄"을 깬 **유일한 변경**이다. 단 그 불변식의 *목적*("도메인 무관 엔진")을 오히려 **완성**한다 — 수단(0줄)이 목적(도메인 무관)과 충돌할 때 목적을 택했고, 그 안전을 DART 불변으로 증명했다.
+- **결과: 같은 결과, 올바른 이유**: Allganize 1-case fixture는 전·후 모두 WARN이지만 이유가 교정됨 — 이전엔 `delta_cases=2.125`(DART 단위)가 우연히 WARN, 지금은 `1.0`이 floor 1.0 경계에 **정확히** 위치. 재발 방지로 `tests/test_noise_floor_domain.py`(런타임 모집단 사용·1/40 경계를 직접 assert) 추가.
+
 ---
 
 ## 메타 교훈
