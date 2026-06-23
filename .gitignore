@@ -14,6 +14,7 @@ gate_runs/
 !docs/remediation_catalog.md
 !docs/artifact_contract.md
 !examples/pr_comment.md
+!docs/adr/*.md
 
 # 재생성 가능한 무거운 부산물
 data/index/
