@@ -12,6 +12,8 @@ gate_runs/
 !KNOWN_ISSUES.md
 !data/wiki_eval/LICENSE.md
 !docs/remediation_catalog.md
+!docs/artifact_contract.md
+!examples/pr_comment.md
 
 # 재생성 가능한 무거운 부산물
 data/index/
