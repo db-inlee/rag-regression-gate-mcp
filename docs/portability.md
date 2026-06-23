@@ -15,7 +15,7 @@
 |---|---|---|---|
 | 회귀 판정 (paired 부트스트랩, CI) | `app/regression/detect.py` | **범용** | 메트릭/실패모드 카운트의 delta CI. 입력이 케이스별 boolean/label이면 도메인 무관 |
 | 노이즈 밴드 측정 | `scripts/measure_noise.py` | **범용** | 같은 config N회 반복 → mean/std/min/max + 케이스 안정성. 도메인 무관 |
-| 결합규칙 / effective_band(floor) | `detect.py` | **범용** | (CI 0미포함) AND (\|delta\|>밴드). 통계 로직 |
+| 결합규칙 / effective_band(floor) | `detect.py` | **범용** | (CI 0미포함) AND (\|delta\|>밴드). floor의 denom(±1-case 환산)은 **런타임 모집단**(`_population_size`로 현재 run의 answerable/no_answer/all 수) — 이전엔 DART 크기(85/15/100) 하드코딩이라 타도메인 floor가 어긋났으나 도메인 무관화함(DART는 런타임값=85/15/100이라 결과 불변). 상세: [`JOURNEY.md` — 감사](JOURNEY.md) |
 | 품질 게이트 PASS/WARN/FAIL + exit code | `app/regression/gate.py`, `scripts/run_gate.py` | **범용** | `FAIL_METRICS` 집합만 설정값화하면 도메인 무관 |
 | judge 채점 골격 (JSON 강제 + fallback) | `app/evaluator/judge.py` | **범용(언어 의존 프롬프트)** | 메커니즘은 범용. 프롬프트 문자열만 한국어 |
 | judge 검증 (gold 대비 정확도·혼동행렬·진짜오답 probe) | `app/evaluator/validate_judge.py` | **범용** | pos / neg(다른문단·미묘변형) probe 설계는 도메인 무관 |
